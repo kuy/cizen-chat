@@ -1,0 +1,23 @@
+{
+  "name": "cizen-chat",
+  "private": true,
+  "scripts": {
+    "start": "parcel watch src/index.re --out-dir ../priv/static/js"
+  },
+  "authors": [
+    "Yuki Kodama <endflow.net@gmail.com>"
+  ],
+  "dependencies": {
+    "@glennsl/bs-json": "^3.0.0",
+    "bucklescript-phx": "^0.1.3",
+    "phoenix": "1.2.1",
+    "react": "^16.5.2",
+    "react-dom": "^16.5.2",
+    "reason-react": "^0.5.3"
+  },
+  "devDependencies": {
+    "bs-platform": "^4.0.6",
+    "bsb-js": "^1.1.7",
+    "parcel-bundler": "1.9.4"
+  }
+}

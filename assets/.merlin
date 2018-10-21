@@ -1,0 +1,18 @@
+####{BSB GENERATED: NO EDIT
+B lib/bs
+FLG -open CizenChat
+FLG -ppx '/Users/kodama/Work/cizen-chat/assets/node_modules/bs-platform/lib/reactjs_jsx_ppx_2.exe'
+FLG -ppx /Users/kodama/Work/cizen-chat/assets/node_modules/bs-platform/lib/bsppx.exe
+S /Users/kodama/Work/cizen-chat/assets/node_modules/bs-platform/lib/ocaml
+B /Users/kodama/Work/cizen-chat/assets/node_modules/bs-platform/lib/ocaml
+FLG -nostdlib -color always
+FLG -w -30-40+6+7+27+32..39+44+45+101
+S /Users/kodama/Work/cizen-chat/assets/node_modules/reason-react/lib/ocaml
+B /Users/kodama/Work/cizen-chat/assets/node_modules/reason-react/lib/ocaml
+S /Users/kodama/Work/cizen-chat/assets/node_modules/bucklescript-phx/lib/ocaml
+B /Users/kodama/Work/cizen-chat/assets/node_modules/bucklescript-phx/lib/ocaml
+S /Users/kodama/Work/cizen-chat/assets/node_modules/@glennsl/bs-json/lib/ocaml
+B /Users/kodama/Work/cizen-chat/assets/node_modules/@glennsl/bs-json/lib/ocaml
+S src
+B lib/bs/src
+####BSB GENERATED: NO EDIT}
