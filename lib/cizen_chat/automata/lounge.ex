@@ -1,6 +1,6 @@
 alias Cizen.Effects.{Start, Receive, Subscribe, Dispatch}
 alias Cizen.EventFilter
-alias CizenChat.Events
+alias CizenChat.Events.Lounge
 alias CizenChat.Automata
 
 defmodule CizenChat.Automata.Lounge do
@@ -11,7 +11,7 @@ defmodule CizenChat.Automata.Lounge do
   @impl true
   def spawn(id, _) do
     perform id, %Subscribe{
-      event_filter: EventFilter.new(event_type: Events.Join)
+      event_filter: EventFilter.new(event_type: Lounge.Join)
     }
 
     %{
@@ -27,13 +27,13 @@ defmodule CizenChat.Automata.Lounge do
 
     event = perform id, %Receive{}
     case event.body do
-      %Events.Join{} ->
+      %Lounge.Join{} ->
         IO.puts("Lounge <= Join")
         avatar_id = perform id, %Start{saga: %Automata.Avatar{}}
 
         IO.puts("Lounge <= Join: avatar_id=#{avatar_id}")
         perform id, %Dispatch{
-          body: %Events.Join.Welcome{
+          body: %Lounge.Join.Welcome{
             join_id: event.id,
             avatar_id: avatar_id
           }

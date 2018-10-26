@@ -2,6 +2,7 @@
 'use strict';
 
 var Phx = require("bucklescript-phx/src/phx.js");
+var $$Array = require("bs-platform/lib/js/array.js");
 var Block = require("bs-platform/lib/js/block.js");
 var Curry = require("bs-platform/lib/js/curry.js");
 var React = require("react");
@@ -38,11 +39,18 @@ function handleReiceive($$event, any) {
   }
 }
 
-function response(json) {
+function welcome(json) {
   return /* record */[/* id */Json_decode.field("id", Json_decode.string, json)];
 }
 
-var Decode = /* module */[/* response */response];
+function created(json) {
+  return /* record */[/* room_id */Json_decode.field("room_id", Json_decode.string, json)];
+}
+
+var Decode = /* module */[
+  /* welcome */welcome,
+  /* created */created
+];
 
 function make() {
   return /* record */[
@@ -58,58 +66,108 @@ function make() {
           /* willUpdate */component[/* willUpdate */7],
           /* shouldUpdate */component[/* shouldUpdate */8],
           /* render */(function (self) {
+              var match = self[/* state */1];
               return React.createElement("div", undefined, React.createElement("h1", undefined, "CizenChat"), React.createElement("button", {
                               onClick: (function () {
-                                  return Curry._1(self[/* send */3], /* Message */1);
+                                  return Curry._1(self[/* send */3], /* Message */2);
                                 })
-                            }, "Send"));
+                            }, "Send Message"), React.createElement("button", {
+                              onClick: (function () {
+                                  return Curry._1(self[/* send */3], /* RoomCreate */1);
+                                })
+                            }, "Create Room"), React.createElement("ul", undefined, typeof match === "number" ? "Connecting..." : $$Array.map((function (room) {
+                                      return React.createElement("li", {
+                                                  key: room
+                                                }, room);
+                                    }), match[0][/* rooms */3])));
             }),
           /* initialState */(function () {
               return /* Connecting */0;
             }),
           /* retainedProps */component[/* retainedProps */11],
-          /* reducer */(function (action, _) {
+          /* reducer */(function (action, state) {
               if (typeof action === "number") {
-                if (action !== 0) {
-                  return /* SideEffects */Block.__(1, [(function (self) {
-                                console.log("Message");
-                                var match = self[/* state */1];
-                                if (typeof match === "number") {
-                                  return /* () */0;
-                                } else {
-                                  Phx.push("room:message", {
-                                        avatar_id: match[0],
-                                        body: "Greetings from ReasonReact!"
-                                      }, undefined, match[2]);
-                                  return /* () */0;
-                                }
-                              })]);
+                switch (action) {
+                  case 0 : 
+                      return /* SideEffects */Block.__(1, [(function (self) {
+                                    var eta = Phx.initSocket(undefined, "/socket");
+                                    var socket = Phx.connectSocket(undefined, eta);
+                                    var channel = (function (eta) {
+                                          return Phx.initChannel("lounge:hello", undefined, eta);
+                                        })(socket);
+                                    Phx.putReceive("error", (function (param) {
+                                            return handleReiceive("error", param);
+                                          }), Phx.putReceive("ok", (function (res) {
+                                                var avatar_id = welcome(res)[/* id */0];
+                                                return Curry._1(self[/* send */3], /* Connected */Block.__(0, [
+                                                              avatar_id,
+                                                              socket,
+                                                              channel
+                                                            ]));
+                                              }), Phx.joinChannel(undefined, channel)));
+                                    return /* () */0;
+                                  })]);
+                  case 1 : 
+                      return /* SideEffects */Block.__(1, [(function (self) {
+                                    console.log("RoomCreate");
+                                    var match = self[/* state */1];
+                                    if (typeof match === "number") {
+                                      return /* () */0;
+                                    } else {
+                                      var match$1 = match[0];
+                                      Phx.putReceive("ok", (function (res) {
+                                              var room_id = created(res)[/* room_id */0];
+                                              return Curry._1(self[/* send */3], /* RoomCreated */Block.__(1, [room_id]));
+                                            }), Phx.push("room:create", {
+                                                avatar_id: match$1[/* id */0]
+                                              }, undefined, match$1[/* channel */2]));
+                                      return /* () */0;
+                                    }
+                                  })]);
+                  case 2 : 
+                      return /* SideEffects */Block.__(1, [(function (self) {
+                                    console.log("Message");
+                                    var match = self[/* state */1];
+                                    if (typeof match === "number") {
+                                      return /* () */0;
+                                    } else {
+                                      var match$1 = match[0];
+                                      Phx.push("room:message", {
+                                            avatar_id: match$1[/* id */0],
+                                            body: "Greetings from ReasonReact!"
+                                          }, undefined, match$1[/* channel */2]);
+                                      return /* () */0;
+                                    }
+                                  })]);
+                  
+                }
+              } else if (action.tag) {
+                if (typeof state === "number") {
+                  return /* NoUpdate */0;
                 } else {
-                  return /* SideEffects */Block.__(1, [(function (self) {
-                                var eta = Phx.initSocket(undefined, "/socket");
-                                var socket = Phx.connectSocket(undefined, eta);
-                                var channel = (function (eta) {
-                                      return Phx.initChannel("lounge:hello", undefined, eta);
-                                    })(socket);
-                                Phx.putReceive("error", (function (param) {
-                                        return handleReiceive("error", param);
-                                      }), Phx.putReceive("ok", (function (res) {
-                                            var avatar_id = response(res)[/* id */0];
-                                            return Curry._1(self[/* send */3], /* Connected */[
-                                                        avatar_id,
-                                                        socket,
-                                                        channel
-                                                      ]);
-                                          }), Phx.joinChannel(undefined, channel)));
-                                return /* () */0;
-                              })]);
+                  var match = state[0];
+                  var rooms = match[/* rooms */3];
+                  console.log(rooms);
+                  return /* Update */Block.__(0, [/* Ready */[/* record */[
+                                /* id */match[/* id */0],
+                                /* socket */match[/* socket */1],
+                                /* channel */match[/* channel */2],
+                                /* rooms */$$Array.concat(/* :: */[
+                                      rooms,
+                                      /* :: */[
+                                        /* array */[action[0]],
+                                        /* [] */0
+                                      ]
+                                    ])
+                              ]]]);
                 }
               } else {
-                return /* Update */Block.__(0, [/* Ready */[
-                            action[0],
-                            action[1],
-                            action[2]
-                          ]]);
+                return /* Update */Block.__(0, [/* Ready */[/* record */[
+                              /* id */action[0],
+                              /* socket */action[1],
+                              /* channel */action[2],
+                              /* rooms : array */[]
+                            ]]]);
               }
             }),
           /* jsElementWrapped */component[/* jsElementWrapped */13]
