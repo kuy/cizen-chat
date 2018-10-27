@@ -95,8 +95,17 @@ defmodule CizenChat.Automata.Avatar do
           }
         }
         state
-      %Room.Message{source: source, dest: _dest, room_id: room_id, text: text} ->
+      %Room.Message{source: source, dest: dest, room_id: room_id, text: text} ->
         IO.puts("Avatar[#{state.name}] <= Room.Message: '#{text}' by #{source} at #{room_id}")
+        perform id, %Dispatch{
+          body: %Room.Message.Transport{
+            source: source,
+            dest: dest,
+            direction: :outgoing,
+            room_id: room_id,
+            text: text
+          }
+        }
         state
     end
   end
