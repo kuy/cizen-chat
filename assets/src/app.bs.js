@@ -17,7 +17,11 @@ var compare = Caml_obj.caml_compare;
 
 var MsgMap = $$Map.Make(/* module */[/* compare */compare]);
 
-function addMsg(room, msg, map) {
+function addMsg(avatar_id, room, body, map) {
+  var msg = /* record */[
+    /* body */body,
+    /* avatar_id */avatar_id
+  ];
   if (Curry._2(MsgMap[/* mem */2], room, map)) {
     var messages = Curry._2(MsgMap[/* find */21], room, map);
     return Curry._3(MsgMap[/* add */3], room, $$Array.concat(/* :: */[
@@ -122,7 +126,7 @@ function make() {
                                           }, room, React.createElement("ul", undefined, $$Array.mapi((function (i, msg) {
                                                       return React.createElement("li", {
                                                                   key: String(i)
-                                                                }, msg);
+                                                                }, React.createElement("b", undefined, msg[/* body */0]), React.createElement("i", undefined, " by " + msg[/* avatar_id */1]));
                                                     }), getMsg(room, messages)), React.createElement("li", undefined, React.createElement("input", {
                                                         placeholder: "What's up?",
                                                         value: text,
@@ -295,7 +299,7 @@ function make() {
                                       /* channel */match$2[/* channel */2],
                                       /* available */match$2[/* available */3],
                                       /* rooms */match$2[/* rooms */4],
-                                      /* messages */addMsg(action[1], action[2], match$2[/* messages */5]),
+                                      /* messages */addMsg(action[0], action[1], action[2], match$2[/* messages */5]),
                                       /* text */match$2[/* text */6]
                                     ]]]);
                       }

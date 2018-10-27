@@ -5,16 +5,22 @@ module MsgMap = Map.Make({
   let compare = compare;
 });
 
-type messages = array(string);
+type message = {
+  body: string,
+  avatar_id: string
+};
+type messages = array(message);
 type messages_by_room = MsgMap.t(messages);
 
-let addMsg = (room, msg, map) =>
+let addMsg = (avatar_id, room, body, map) => {
+  let msg = { body, avatar_id };
   if (MsgMap.mem(room, map)) {
     let messages = MsgMap.find(room, map);
     MsgMap.add(room, Array.concat([messages, [|msg|]]), map);
   } else {
     MsgMap.add(room, [|msg|], map);
   };
+};
 
 let getMsg = (room, map) =>
   try(MsgMap.find(room, map)) {
@@ -134,7 +140,7 @@ let make = _children => {
           channel,
           available,
           rooms,
-          messages: addMsg(room_id, body, messages),
+          messages: addMsg(source, room_id, body, messages),
           text
         }))
       | _ => ReasonReact.NoUpdate
@@ -230,8 +236,11 @@ let make = _children => {
                   <ul>
                     (
                       getMsg(room, messages)
-                      |> Array.mapi((i, msg) =>
-                        <li key=(string_of_int(i))>(ReasonReact.string(msg))</li>
+                      |> Array.mapi((i, msg: message) =>
+                        <li key=(string_of_int(i))>
+                          <b>(ReasonReact.string(msg.body))</b>
+                          <i>(ReasonReact.string(" by " ++ msg.avatar_id))</i>
+                        </li>
                       )
                       |> ReasonReact.array
                     )
