@@ -5,7 +5,7 @@ defmodule CizenChat.Events.Lounge.Join do
 
   use Cizen.Request
   defresponse Welcome, :join_id do
-    defstruct [:join_id, :avatar_id]
+    defstruct [:join_id, :avatar_id, :rooms]
   end
 end
 
@@ -15,11 +15,14 @@ defmodule CizenChat.Events.Room do
   defstruct []
 
   import Cizen.EventBodyFilter
-  defeventbodyfilter AvatarIDFilter, :avatar_id
+  defeventbodyfilter SourceFilter, :source
+  defeventbodyfilter DestFilter, :dest
+  defeventbodyfilter RoomIDFilter, :room_id
+  defeventbodyfilter DirectionFilter, :direction
 end
 
 defmodule CizenChat.Events.Room.Create do
-  defstruct [:avatar_id]
+  defstruct [:source]
 
   use Cizen.Request
   defresponse Done, :create_id do
@@ -28,17 +31,21 @@ defmodule CizenChat.Events.Room.Create do
 end
 
 defmodule CizenChat.Events.Room.Delete do
-  defstruct [:room_id]
+  defstruct [:source, :room_id]
 end
 
 defmodule CizenChat.Events.Room.Enter do
-  defstruct [:room_id]
+  defstruct [:source, :room_id]
 end
 
 defmodule CizenChat.Events.Room.Leave do
-  defstruct [:room_id]
+  defstruct [:source, :room_id]
 end
 
 defmodule CizenChat.Events.Room.Message do
-  defstruct [:avatar_id, :room_id, :text]
+  defstruct [:source, :dest, :room_id, :text]
+end
+
+defmodule CizenChat.Events.Room.Message.Transport do
+  defstruct [:source, :dest, :direction, :room_id, :text]
 end
