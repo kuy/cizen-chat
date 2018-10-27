@@ -21,13 +21,21 @@ let getMsg = (room, map) =>
   | Not_found => [||]
   };
 
+let subtract = (a1, a2) => {
+  let l2 = Array.to_list(a2);
+  Array.to_list(a1)
+  |> List.filter(e => !List.mem(e, l2))
+  |> Array.of_list;
+};
+
 type ready_state = {
   id: string,
   socket: Socket.t,
   channel: Channel.t,
   available: array(string),
   rooms: array(string),
-  messages: messages_by_room
+  messages: messages_by_room,
+  text: string
 };
 
 type state =
@@ -41,19 +49,11 @@ type action =
   | RoomCreate
   | RoomCreated(string)
   | RoomEnter(string)
-  | Send
-  | Receive(string, string, string);
+  | Send(string)
+  | Receive(string, string, string)
+  | UpdateText(string);
 
 let component = ReasonReact.reducerComponent("App");
-
-let handleSend = (_event, _self) => Js.log("send");
-
-let handleReiceive = (event, any) =>
-  switch event {
-  | "ok" => Js.log(("handleReiceive:" ++ event, "Joined"))
-  | "error" => Js.log(("handleReiceive:" ++ event, "Failed to join channel"))
-  | _ => Js.log(("handleReiceive:" ++ event, any))
-};
 
 type welcome_response = { id: string, rooms: array(string) };
 type created_response = { room_id: string };
@@ -103,8 +103,7 @@ let make = _children => {
           |> putReceive("ok", (res: Abstract.any) => {
             let welcome = Decode.welcome(res);
             self.send(Connected(welcome.id, socket, channel, welcome.rooms));
-          })
-          |> putReceive("error", handleReiceive("error"));
+          });
       })
     | Connected(id, socket, channel, rooms) =>
       Js.log(rooms);
@@ -114,38 +113,33 @@ let make = _children => {
         channel,
         available: rooms,
         rooms: [||],
-        messages: MsgMap.empty
+        messages: MsgMap.empty,
+        text: ""
       }))
-    | Send => ReasonReact.SideEffects(self => {
-      Js.log("Send");
+    | Send(room) => ReasonReact.SideEffects(self => {
       switch (self.state) {
-      | Ready({ id, channel, rooms }) =>
-        switch (Array.to_list(rooms)) {
-        | [room_id, ...rest] =>
-          let text = "Greetings from ReasonReact!";
-          push("room:message", {"source": id, "room_id": room_id, "body": text}, channel) |> ignore;
-          /* Loopback. Update self state */
-          self.send(Receive(id, room_id, text));
-        | _ => ()
-        }
+      | Ready({ id, channel, rooms, text }) =>
+        push("room:message", {"source": id, "room_id": room, "body": text}, channel) |> ignore;
+        /* Loopback. Update self state */
+        self.send(Receive(id, room, text));
+        self.send(UpdateText(""));
       | _ => ()
       }})
     | Receive(source, room_id, body) =>
-      Js.log("Receive");
       switch (state) {
-      | Ready({ id, socket, channel, available, rooms, messages }) =>
+      | Ready({ id, socket, channel, available, rooms, messages, text }) =>
         ReasonReact.Update(Ready({
           id,
           socket,
           channel,
           available,
           rooms,
-          messages: addMsg(room_id, body, messages)
+          messages: addMsg(room_id, body, messages),
+          text
         }))
       | _ => ReasonReact.NoUpdate
       }
     | RoomCreate => ReasonReact.SideEffects(self => {
-      Js.log("RoomCreate");
       switch (self.state) {
       | Ready({ id, channel }) =>
         push("room:create", {"source": id}, channel)
@@ -158,31 +152,45 @@ let make = _children => {
       | _ => ()
       }})
     | RoomCreated(room_id) =>
-      Js.log("RoomCreated");
       switch (state) {
-      | Ready({ id, socket, channel, available, rooms, messages }) =>
+      | Ready({ id, socket, channel, available, rooms, messages, text }) =>
         ReasonReact.Update(Ready({
           id,
           socket,
           channel,
           available: Array.concat([available, [|room_id|]]),
           rooms: Array.concat([rooms, [|room_id|]]),
-          messages
+          messages,
+          text
         }))
       | _ => ReasonReact.NoUpdate
       };
     | RoomEnter(room_id) =>
-      Js.log("RoomEnter");
       switch (state) {
-      | Ready({ id, socket, channel, available, rooms, messages }) =>
+      | Ready({ id, socket, channel, available, rooms, messages, text }) =>
         push("room:enter", {"source": id, "room_id": room_id}, channel);
         ReasonReact.Update(Ready({
           id,
           socket,
           channel,
           available: available,
-          rooms: Array.concat([[|room_id|], rooms]),
-          messages
+          rooms: Array.concat([rooms, [|room_id|]]),
+          messages,
+          text
+        }))
+      | _ => ReasonReact.NoUpdate
+      };
+    | UpdateText(input) =>
+      switch (state) {
+      | Ready({ id, socket, channel, available, rooms, messages, text }) =>
+        ReasonReact.Update(Ready({
+          id,
+          socket,
+          channel,
+          available,
+          rooms,
+          messages,
+          text: input
         }))
       | _ => ReasonReact.NoUpdate
       };
@@ -191,13 +199,10 @@ let make = _children => {
     <div>
       <h1>{ReasonReact.string("CizenChat")}</h1>
       (switch (self.state) {
-      | Ready({ id, available, rooms, messages }) =>
+      | Ready({ id, available, rooms, messages, text }) =>
         <>
           <h2>(ReasonReact.string("Client ID: " ++ id))</h2>
 
-          <button onClick=(_event => self.send(Send))>
-            (ReasonReact.string("Send Message"))
-          </button>
           <button onClick=(_event => self.send(RoomCreate))>
             (ReasonReact.string("Create Room"))
           </button>
@@ -205,7 +210,7 @@ let make = _children => {
           <h2>(ReasonReact.string("Available Rooms"))</h2>
           <ul>
             (
-              available
+              subtract(available, rooms)
               |> Array.map(room =>
                 <li key=room>
                   <a onClick=(_event => self.send(RoomEnter(room)))>(ReasonReact.string(room))</a>
@@ -230,6 +235,23 @@ let make = _children => {
                       )
                       |> ReasonReact.array
                     )
+                    <li>
+                      <input
+                        placeholder="What's up?"
+                        value=text
+                        onKeyDown=(
+                          event =>
+                            if (ReactEvent.Keyboard.keyCode(event) === 13) {
+                              ReactEvent.Keyboard.preventDefault(event);
+                              self.send(Send(room));
+                            }
+                        )
+                        onChange=(
+                          event =>
+                            self.send(UpdateText(ReactEvent.Form.target(event)##value))
+                        )
+                      />
+                    </li>
                   </ul>
                 </li>
               )
@@ -237,7 +259,7 @@ let make = _children => {
             )
           </ul>
         </>
-      | _ => ReasonReact.string("Connecting...")
+      | _ => <h2>(ReasonReact.string("Connecting..."))</h2>
       })
     </div>;
   },

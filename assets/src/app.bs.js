@@ -3,6 +3,7 @@
 
 var $$Map = require("bs-platform/lib/js/map.js");
 var Phx = require("bucklescript-phx/src/phx.js");
+var List = require("bs-platform/lib/js/list.js");
 var $$Array = require("bs-platform/lib/js/array.js");
 var Block = require("bs-platform/lib/js/block.js");
 var Curry = require("bs-platform/lib/js/curry.js");
@@ -44,35 +45,14 @@ function getMsg(room, map) {
   }
 }
 
+function subtract(a1, a2) {
+  var l2 = $$Array.to_list(a2);
+  return $$Array.of_list(List.filter((function (e) {
+                      return !List.mem(e, l2);
+                    }))($$Array.to_list(a1)));
+}
+
 var component = ReasonReact.reducerComponent("App");
-
-function handleSend(_, _$1) {
-  console.log("send");
-  return /* () */0;
-}
-
-function handleReiceive($$event, any) {
-  switch ($$event) {
-    case "error" : 
-        console.log(/* tuple */[
-              "handleReiceive:" + $$event,
-              "Failed to join channel"
-            ]);
-        return /* () */0;
-    case "ok" : 
-        console.log(/* tuple */[
-              "handleReiceive:" + $$event,
-              "Joined"
-            ]);
-        return /* () */0;
-    default:
-      console.log(/* tuple */[
-            "handleReiceive:" + $$event,
-            any
-          ]);
-      return /* () */0;
-  }
-}
 
 function welcome(json) {
   return /* record */[
@@ -118,15 +98,13 @@ function make() {
               var match = self[/* state */1];
               var tmp;
               if (typeof match === "number") {
-                tmp = "Connecting...";
+                tmp = React.createElement("h2", undefined, "Connecting...");
               } else {
                 var match$1 = match[0];
+                var text = match$1[/* text */6];
                 var messages = match$1[/* messages */5];
+                var rooms = match$1[/* rooms */4];
                 tmp = React.createElement(React.Fragment, undefined, React.createElement("h2", undefined, "Client ID: " + match$1[/* id */0]), React.createElement("button", {
-                          onClick: (function () {
-                              return Curry._1(self[/* send */3], /* Send */2);
-                            })
-                        }, "Send Message"), React.createElement("button", {
                           onClick: (function () {
                               return Curry._1(self[/* send */3], /* RoomCreate */1);
                             })
@@ -138,15 +116,29 @@ function make() {
                                                     return Curry._1(self[/* send */3], /* RoomEnter */Block.__(2, [room]));
                                                   })
                                               }, room));
-                              }), match$1[/* available */3])), React.createElement("h2", undefined, "Entered Rooms"), React.createElement("ul", undefined, $$Array.map((function (room) {
+                              }), subtract(match$1[/* available */3], rooms))), React.createElement("h2", undefined, "Entered Rooms"), React.createElement("ul", undefined, $$Array.map((function (room) {
                                 return React.createElement("li", {
                                             key: room
                                           }, room, React.createElement("ul", undefined, $$Array.mapi((function (i, msg) {
                                                       return React.createElement("li", {
                                                                   key: String(i)
                                                                 }, msg);
-                                                    }), getMsg(room, messages))));
-                              }), match$1[/* rooms */4])));
+                                                    }), getMsg(room, messages)), React.createElement("li", undefined, React.createElement("input", {
+                                                        placeholder: "What's up?",
+                                                        value: text,
+                                                        onKeyDown: (function ($$event) {
+                                                            if ($$event.keyCode === 13) {
+                                                              $$event.preventDefault();
+                                                              return Curry._1(self[/* send */3], /* Send */Block.__(3, [room]));
+                                                            } else {
+                                                              return 0;
+                                                            }
+                                                          }),
+                                                        onChange: (function ($$event) {
+                                                            return Curry._1(self[/* send */3], /* UpdateText */Block.__(5, [$$event.target.value]));
+                                                          })
+                                                      }))));
+                              }), rooms)));
               }
               return React.createElement("div", undefined, React.createElement("h1", undefined, "CizenChat"), tmp);
             }),
@@ -156,81 +148,48 @@ function make() {
           /* retainedProps */component[/* retainedProps */11],
           /* reducer */(function (action, state) {
               if (typeof action === "number") {
-                switch (action) {
-                  case 0 : 
-                      return /* SideEffects */Block.__(1, [(function (self) {
-                                    var eta = Phx.initSocket(undefined, "/socket");
-                                    var socket = Phx.connectSocket(undefined, eta);
-                                    var channel = (function (eta) {
-                                          return Phx.initChannel("lounge:hello", undefined, eta);
-                                        })(socket);
-                                    var eta$1 = Phx.putOn("room:message", (function (res) {
-                                            var match = receive(res);
-                                            return Curry._1(self[/* send */3], /* Receive */Block.__(3, [
-                                                          match[/* source */0],
-                                                          match[/* room_id */1],
-                                                          match[/* body */2]
-                                                        ]));
-                                          }), channel);
-                                    Phx.putReceive("error", (function (param) {
-                                            return handleReiceive("error", param);
-                                          }), Phx.putReceive("ok", (function (res) {
-                                                var welcome$1 = welcome(res);
-                                                return Curry._1(self[/* send */3], /* Connected */Block.__(0, [
-                                                              welcome$1[/* id */0],
-                                                              socket,
-                                                              channel,
-                                                              welcome$1[/* rooms */1]
-                                                            ]));
-                                              }), Phx.joinChannel(undefined, eta$1)));
-                                    return /* () */0;
-                                  })]);
-                  case 1 : 
-                      return /* SideEffects */Block.__(1, [(function (self) {
-                                    console.log("RoomCreate");
-                                    var match = self[/* state */1];
-                                    if (typeof match === "number") {
-                                      return /* () */0;
-                                    } else {
-                                      var match$1 = match[0];
-                                      Phx.putReceive("ok", (function (res) {
-                                              var room_id = created(res)[/* room_id */0];
-                                              return Curry._1(self[/* send */3], /* RoomCreated */Block.__(1, [room_id]));
-                                            }), Phx.push("room:create", {
-                                                source: match$1[/* id */0]
-                                              }, undefined, match$1[/* channel */2]));
-                                      return /* () */0;
-                                    }
-                                  })]);
-                  case 2 : 
-                      return /* SideEffects */Block.__(1, [(function (self) {
-                                    console.log("Send");
-                                    var match = self[/* state */1];
-                                    if (typeof match === "number") {
-                                      return /* () */0;
-                                    } else {
-                                      var match$1 = match[0];
-                                      var id = match$1[/* id */0];
-                                      var match$2 = $$Array.to_list(match$1[/* rooms */4]);
-                                      if (match$2) {
-                                        var room_id = match$2[0];
-                                        var text = "Greetings from ReasonReact!";
-                                        Phx.push("room:message", {
-                                              source: id,
-                                              room_id: room_id,
-                                              body: text
-                                            }, undefined, match$1[/* channel */2]);
-                                        return Curry._1(self[/* send */3], /* Receive */Block.__(3, [
-                                                      id,
-                                                      room_id,
-                                                      text
+                if (action === 0) {
+                  return /* SideEffects */Block.__(1, [(function (self) {
+                                var eta = Phx.initSocket(undefined, "/socket");
+                                var socket = Phx.connectSocket(undefined, eta);
+                                var channel = (function (eta) {
+                                      return Phx.initChannel("lounge:hello", undefined, eta);
+                                    })(socket);
+                                var eta$1 = Phx.putOn("room:message", (function (res) {
+                                        var match = receive(res);
+                                        return Curry._1(self[/* send */3], /* Receive */Block.__(4, [
+                                                      match[/* source */0],
+                                                      match[/* room_id */1],
+                                                      match[/* body */2]
                                                     ]));
-                                      } else {
-                                        return /* () */0;
-                                      }
-                                    }
-                                  })]);
-                  
+                                      }), channel);
+                                Phx.putReceive("ok", (function (res) {
+                                        var welcome$1 = welcome(res);
+                                        return Curry._1(self[/* send */3], /* Connected */Block.__(0, [
+                                                      welcome$1[/* id */0],
+                                                      socket,
+                                                      channel,
+                                                      welcome$1[/* rooms */1]
+                                                    ]));
+                                      }), Phx.joinChannel(undefined, eta$1));
+                                return /* () */0;
+                              })]);
+                } else {
+                  return /* SideEffects */Block.__(1, [(function (self) {
+                                var match = self[/* state */1];
+                                if (typeof match === "number") {
+                                  return /* () */0;
+                                } else {
+                                  var match$1 = match[0];
+                                  Phx.putReceive("ok", (function (res) {
+                                          var room_id = created(res)[/* room_id */0];
+                                          return Curry._1(self[/* send */3], /* RoomCreated */Block.__(1, [room_id]));
+                                        }), Phx.push("room:create", {
+                                            source: match$1[/* id */0]
+                                          }, undefined, match$1[/* channel */2]));
+                                  return /* () */0;
+                                }
+                              })]);
                 }
               } else {
                 switch (action.tag | 0) {
@@ -243,11 +202,11 @@ function make() {
                                     /* channel */action[2],
                                     /* available */rooms,
                                     /* rooms : array */[],
-                                    /* messages */MsgMap[/* empty */0]
+                                    /* messages */MsgMap[/* empty */0],
+                                    /* text */""
                                   ]]]);
                   case 1 : 
                       var room_id = action[0];
-                      console.log("RoomCreated");
                       if (typeof state === "number") {
                         return /* NoUpdate */0;
                       } else {
@@ -270,12 +229,12 @@ function make() {
                                               /* [] */0
                                             ]
                                           ]),
-                                      /* messages */match[/* messages */5]
+                                      /* messages */match[/* messages */5],
+                                      /* text */match[/* text */6]
                                     ]]]);
                       }
                   case 2 : 
                       var room_id$1 = action[0];
-                      console.log("RoomEnter");
                       if (typeof state === "number") {
                         return /* NoUpdate */0;
                       } else {
@@ -292,17 +251,40 @@ function make() {
                                       /* channel */channel,
                                       /* available */match$1[/* available */3],
                                       /* rooms */$$Array.concat(/* :: */[
-                                            /* array */[room_id$1],
+                                            match$1[/* rooms */4],
                                             /* :: */[
-                                              match$1[/* rooms */4],
+                                              /* array */[room_id$1],
                                               /* [] */0
                                             ]
                                           ]),
-                                      /* messages */match$1[/* messages */5]
+                                      /* messages */match$1[/* messages */5],
+                                      /* text */match$1[/* text */6]
                                     ]]]);
                       }
                   case 3 : 
-                      console.log("Receive");
+                      var room = action[0];
+                      return /* SideEffects */Block.__(1, [(function (self) {
+                                    var match = self[/* state */1];
+                                    if (typeof match === "number") {
+                                      return /* () */0;
+                                    } else {
+                                      var match$1 = match[0];
+                                      var text = match$1[/* text */6];
+                                      var id = match$1[/* id */0];
+                                      Phx.push("room:message", {
+                                            source: id,
+                                            room_id: room,
+                                            body: text
+                                          }, undefined, match$1[/* channel */2]);
+                                      Curry._1(self[/* send */3], /* Receive */Block.__(4, [
+                                              id,
+                                              room,
+                                              text
+                                            ]));
+                                      return Curry._1(self[/* send */3], /* UpdateText */Block.__(5, [""]));
+                                    }
+                                  })]);
+                  case 4 : 
                       if (typeof state === "number") {
                         return /* NoUpdate */0;
                       } else {
@@ -313,7 +295,23 @@ function make() {
                                       /* channel */match$2[/* channel */2],
                                       /* available */match$2[/* available */3],
                                       /* rooms */match$2[/* rooms */4],
-                                      /* messages */addMsg(action[1], action[2], match$2[/* messages */5])
+                                      /* messages */addMsg(action[1], action[2], match$2[/* messages */5]),
+                                      /* text */match$2[/* text */6]
+                                    ]]]);
+                      }
+                  case 5 : 
+                      if (typeof state === "number") {
+                        return /* NoUpdate */0;
+                      } else {
+                        var match$3 = state[0];
+                        return /* Update */Block.__(0, [/* Ready */[/* record */[
+                                      /* id */match$3[/* id */0],
+                                      /* socket */match$3[/* socket */1],
+                                      /* channel */match$3[/* channel */2],
+                                      /* available */match$3[/* available */3],
+                                      /* rooms */match$3[/* rooms */4],
+                                      /* messages */match$3[/* messages */5],
+                                      /* text */action[0]
                                     ]]]);
                       }
                   
@@ -327,9 +325,8 @@ function make() {
 exports.MsgMap = MsgMap;
 exports.addMsg = addMsg;
 exports.getMsg = getMsg;
+exports.subtract = subtract;
 exports.component = component;
-exports.handleSend = handleSend;
-exports.handleReiceive = handleReiceive;
 exports.Decode = Decode;
 exports.make = make;
 /* MsgMap Not a pure module */
