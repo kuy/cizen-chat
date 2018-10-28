@@ -193,17 +193,10 @@ let make = _children => {
       }})
     | Receive(source, room_id, body) =>
       switch (state) {
-      | Ready({ id, socket, channel, rooms, available, entered, messages, text, selected }) =>
+      | Ready({ messages } as state) =>
         ReasonReact.Update(Ready({
-          id,
-          socket,
-          channel,
-          rooms,
-          available,
-          entered,
-          messages: addMsg(source, room_id, body, messages),
-          text,
-          selected
+          ...state,
+          messages: addMsg(source, room_id, body, messages)
         }))
       | _ => ReasonReact.NoUpdate
       }
@@ -221,66 +214,43 @@ let make = _children => {
       }})
     | RoomCreated(room_id) =>
       switch (state) {
-      | Ready({ id, socket, channel, rooms, available, entered, messages, text, selected }) =>
+      | Ready({ rooms, available, entered } as state) =>
         ReasonReact.Update(Ready({
-          id,
-          socket,
-          channel,
+          ...state,
           rooms: upsertRoom(room_id, "green", rooms),
           available: uniqRooms(room_id, available),
           entered: uniqRooms(room_id, entered),
-          messages,
-          text,
           selected: Some(room_id)
         }))
       | _ => ReasonReact.NoUpdate
       }
     | RoomEnter(room_id) =>
       switch (state) {
-      | Ready({ id, socket, channel, rooms, available, entered, messages, text, selected }) =>
+      | Ready({ id, channel, entered } as state) =>
         push("room:enter", {"source": id, "room_id": room_id}, channel);
         ReasonReact.Update(Ready({
-          id,
-          socket,
-          channel,
-          rooms,
-          available,
+          ...state,
           entered: uniqRooms(room_id, entered),
-          messages,
-          text,
           selected: Some(room_id)
         }))
       | _ => ReasonReact.NoUpdate
       }
     | RoomSelect(room_id) =>
       switch (state) {
-      | Ready({ id, socket, channel, rooms, available, entered, messages, text, selected }) =>
+      | Ready({ selected } as state) =>
         ReasonReact.Update(Ready({
-          id,
-          socket,
-          channel,
-          rooms,
-          available,
-          entered,
-          messages,
-          text,
+          ...state,
           selected: Some(room_id)
         }))
       | _ => ReasonReact.NoUpdate
       }
     | ReceiveRoomSetting(room_id, color) =>
       switch (state) {
-      | Ready({ id, socket, channel, rooms, available, entered, messages, text, selected }) =>
+      | Ready({ rooms, available } as state) =>
         ReasonReact.Update(Ready({
-          id,
-          socket,
-          channel,
+          ...state,
           rooms: upsertRoom(room_id, color, rooms),
-          available: uniqRooms(room_id, available),
-          entered,
-          messages,
-          text,
-          selected
+          available: uniqRooms(room_id, available)
         }))
       | _ => ReasonReact.NoUpdate
       }
@@ -298,17 +268,10 @@ let make = _children => {
       }})
     | UpdateText(input) =>
       switch (state) {
-      | Ready({ id, socket, channel, rooms, available, entered, messages, text, selected }) =>
+      | Ready({ text } as state) =>
         ReasonReact.Update(Ready({
-          id,
-          socket,
-          channel,
-          rooms,
-          available,
-          entered,
-          messages,
-          text: input,
-          selected
+          ...state,
+          text: input
         }))
       | _ => ReasonReact.NoUpdate
       }
