@@ -228,82 +228,91 @@ let make = _children => {
       }
     },
   render: self => {
-    <div className="container">
+    <div className="p-container">
       (switch (self.state) {
       | Ready({ id, available, rooms, messages, text, selected }) =>
         <>
-          <div className="rooms">
-            <h1>{ReasonReact.string("CizenChat")}</h1>
-            <p>(ReasonReact.string("#" ++ id))</p>
-            <button onClick=(_event => self.send(RoomCreate))>
-              (ReasonReact.string("Create Room"))
-            </button>
+          <div className="p-rooms">
+            <header className="c-header">{ReasonReact.string("CizenChat")}</header>
+            <div className="p-side-content">
+              <div className="c-user">(ReasonReact.string("#" ++ id))</div>
 
-            <h3>(ReasonReact.string("Available Rooms"))</h3>
-            <ul>
-              (
-                subtract(available, rooms)
-                |> Array.map(room =>
-                  <li key=room>
-                    <a onClick=(_event => self.send(RoomEnter(room)))>(ReasonReact.string(room))</a>
-                  </li>
-                )
-                |> ReasonReact.array
-              )
-            </ul>
+              <button className="c-button" onClick=(_event => self.send(RoomCreate))>
+                (ReasonReact.string("Create Room"))
+              </button>
 
-            <h3>(ReasonReact.string("Entered Rooms"))</h3>
-            <ul>
-              (
-                rooms
-                |> Array.map(room =>
-                  <li key=room>
-                    <a onClick=(_event => self.send(RoomSelect(room)))>(ReasonReact.string(room))</a>
-                  </li>
-                )
-                |> ReasonReact.array
-              )
-            </ul>
-          </div>
-          <div className="chat">
-            (switch (selected) {
-            | Some(room) =>
-              <>
-                <h2>(ReasonReact.string("#" ++ room))</h2>
-                <ul>
+              <div className="c-list">
+                <div className="c-list-header">(ReasonReact.string("Available Rooms"))</div>
+                <div className="c-list-body">
                   (
-                    getMsg(room, messages)
-                    |> Array.mapi((i, msg: message) =>
-                      <li key=(string_of_int(i))>
-                        <b>(ReasonReact.string(msg.body))</b>
-                        <i>(ReasonReact.string(" by " ++ msg.avatar_id))</i>
-                      </li>
+                    subtract(available, rooms)
+                    |> Array.map(room =>
+                      <div className="c-list-item" key=room onClick=(_event => self.send(RoomEnter(room)))>(ReasonReact.string(room))</div>
                     )
                     |> ReasonReact.array
                   )
-                  <li>
-                    <input
-                      placeholder="What's up?"
-                      value=text
-                      onKeyDown=(
-                        event =>
-                          if (ReactEvent.Keyboard.keyCode(event) === 13) {
-                            ReactEvent.Keyboard.preventDefault(event);
-                            self.send(Send);
-                          }
-                      )
-                      onChange=(
-                        event =>
-                          self.send(UpdateText(ReactEvent.Form.target(event)##value))
-                      )
-                    />
-                  </li>
-                </ul>
-              </>
-            | None => <p>(ReasonReact.string("Select or create a room"))</p>
-            })
+                </div>
+              </div>
+
+              <div className="c-list">
+                <div className="c-list-header">(ReasonReact.string("Joined Rooms"))</div>
+                <div className="c-list-body">
+                  (
+                    rooms
+                    |> Array.map(room =>
+                      <div className="c-list-item" key=room onClick=(_event => self.send(RoomSelect(room)))>(ReasonReact.string(room))</div>
+                    )
+                    |> ReasonReact.array
+                  )
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="avatars">
+          <div className="p-chat">
+            <div className="c-chat">
+              (switch (selected) {
+              | Some(room) =>
+                <>
+                  <div className="c-chat-header">(ReasonReact.string("#" ++ room))</div>
+                  <div>
+                    (
+                      getMsg(room, messages)
+                      |> Array.mapi((i, msg: message) =>
+                        <div className="c-message" key=(string_of_int(i))>
+                          <b>(ReasonReact.string(msg.body))</b>
+                          <i>(ReasonReact.string(" by " ++ msg.avatar_id))</i>
+                        </div>
+                      )
+                      |> ReasonReact.array
+                    )
+                  </div>
+                </>
+              | None => <p>(ReasonReact.string("Select or create a room"))</p>
+              })
+            </div>
+            <div className="c-text-area-wrapper">
+              <div className="c-text-area">
+                <textarea 
+                  rows=1
+                  placeholder="What's up?"
+                  value=text
+                  onKeyDown=(
+                    event =>
+                      if (ReactEvent.Keyboard.keyCode(event) === 13) {
+                        ReactEvent.Keyboard.preventDefault(event);
+                        self.send(Send);
+                      }
+                  )
+                  onChange=(
+                    event =>
+                      self.send(UpdateText(ReactEvent.Form.target(event)##value))
+                  )
+                >
+                </textarea>
+              </div>
+            </div>
+          </div>
+          <div className="p-avatars">
           </div>
         </>
       | _ => <div>(ReasonReact.string("Connecting..."))</div>

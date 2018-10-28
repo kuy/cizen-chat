@@ -110,58 +110,87 @@ function make() {
                 var tmp$1;
                 if (selected !== undefined) {
                   var room = selected;
-                  tmp$1 = React.createElement(React.Fragment, undefined, React.createElement("h2", undefined, "#" + room), React.createElement("ul", undefined, $$Array.mapi((function (i, msg) {
-                                  return React.createElement("li", {
-                                              key: String(i)
+                  tmp$1 = React.createElement(React.Fragment, undefined, React.createElement("div", {
+                            className: "c-chat-header"
+                          }, "#" + room), React.createElement("div", undefined, $$Array.mapi((function (i, msg) {
+                                  return React.createElement("div", {
+                                              key: String(i),
+                                              className: "c-message"
                                             }, React.createElement("b", undefined, msg[/* body */0]), React.createElement("i", undefined, " by " + msg[/* avatar_id */1]));
-                                }), getMsg(room, match$1[/* messages */5])), React.createElement("li", undefined, React.createElement("input", {
-                                    placeholder: "What's up?",
-                                    value: match$1[/* text */6],
-                                    onKeyDown: (function ($$event) {
-                                        if ($$event.keyCode === 13) {
-                                          $$event.preventDefault();
-                                          return Curry._1(self[/* send */3], /* Send */2);
-                                        } else {
-                                          return 0;
-                                        }
-                                      }),
-                                    onChange: (function ($$event) {
-                                        return Curry._1(self[/* send */3], /* UpdateText */Block.__(5, [$$event.target.value]));
-                                      })
-                                  }))));
+                                }), getMsg(room, match$1[/* messages */5]))));
                 } else {
                   tmp$1 = React.createElement("p", undefined, "Select or create a room");
                 }
                 tmp = React.createElement(React.Fragment, undefined, React.createElement("div", {
-                          className: "rooms"
-                        }, React.createElement("h1", undefined, "CizenChat"), React.createElement("p", undefined, "#" + match$1[/* id */0]), React.createElement("button", {
-                              onClick: (function () {
-                                  return Curry._1(self[/* send */3], /* RoomCreate */1);
-                                })
-                            }, "Create Room"), React.createElement("h3", undefined, "Available Rooms"), React.createElement("ul", undefined, $$Array.map((function (room) {
-                                    return React.createElement("li", {
-                                                key: room
-                                              }, React.createElement("a", {
-                                                    onClick: (function () {
-                                                        return Curry._1(self[/* send */3], /* RoomEnter */Block.__(2, [room]));
-                                                      })
-                                                  }, room));
-                                  }), subtract(match$1[/* available */3], rooms))), React.createElement("h3", undefined, "Entered Rooms"), React.createElement("ul", undefined, $$Array.map((function (room) {
-                                    return React.createElement("li", {
-                                                key: room
-                                              }, React.createElement("a", {
-                                                    onClick: (function () {
-                                                        return Curry._1(self[/* send */3], /* RoomSelect */Block.__(3, [room]));
-                                                      })
-                                                  }, room));
-                                  }), rooms))), React.createElement("div", {
-                          className: "chat"
-                        }, tmp$1), React.createElement("div", {
-                          className: "avatars"
+                          className: "p-rooms"
+                        }, React.createElement("header", {
+                              className: "c-header"
+                            }, "CizenChat"), React.createElement("div", {
+                              className: "p-side-content"
+                            }, React.createElement("div", {
+                                  className: "c-user"
+                                }, "#" + match$1[/* id */0]), React.createElement("button", {
+                                  className: "c-button",
+                                  onClick: (function () {
+                                      return Curry._1(self[/* send */3], /* RoomCreate */1);
+                                    })
+                                }, "Create Room"), React.createElement("div", {
+                                  className: "c-list"
+                                }, React.createElement("div", {
+                                      className: "c-list-header"
+                                    }, "Available Rooms"), React.createElement("div", {
+                                      className: "c-list-body"
+                                    }, $$Array.map((function (room) {
+                                            return React.createElement("div", {
+                                                        key: room,
+                                                        className: "c-list-item",
+                                                        onClick: (function () {
+                                                            return Curry._1(self[/* send */3], /* RoomEnter */Block.__(2, [room]));
+                                                          })
+                                                      }, room);
+                                          }), subtract(match$1[/* available */3], rooms)))), React.createElement("div", {
+                                  className: "c-list"
+                                }, React.createElement("div", {
+                                      className: "c-list-header"
+                                    }, "Joined Rooms"), React.createElement("div", {
+                                      className: "c-list-body"
+                                    }, $$Array.map((function (room) {
+                                            return React.createElement("div", {
+                                                        key: room,
+                                                        className: "c-list-item",
+                                                        onClick: (function () {
+                                                            return Curry._1(self[/* send */3], /* RoomSelect */Block.__(3, [room]));
+                                                          })
+                                                      }, room);
+                                          }), rooms))))), React.createElement("div", {
+                          className: "p-chat"
+                        }, React.createElement("div", {
+                              className: "c-chat"
+                            }, tmp$1), React.createElement("div", {
+                              className: "c-text-area-wrapper"
+                            }, React.createElement("div", {
+                                  className: "c-text-area"
+                                }, React.createElement("textarea", {
+                                      placeholder: "What's up?",
+                                      rows: 1,
+                                      value: match$1[/* text */6],
+                                      onKeyDown: (function ($$event) {
+                                          if ($$event.keyCode === 13) {
+                                            $$event.preventDefault();
+                                            return Curry._1(self[/* send */3], /* Send */2);
+                                          } else {
+                                            return 0;
+                                          }
+                                        }),
+                                      onChange: (function ($$event) {
+                                          return Curry._1(self[/* send */3], /* UpdateText */Block.__(5, [$$event.target.value]));
+                                        })
+                                    })))), React.createElement("div", {
+                          className: "p-avatars"
                         }));
               }
               return React.createElement("div", {
-                          className: "container"
+                          className: "p-container"
                         }, tmp);
             }),
           /* initialState */(function () {
