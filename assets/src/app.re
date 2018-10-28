@@ -1,5 +1,7 @@
 open Phx;
 
+/* type: message */
+
 module MsgMap = Map.Make({
   type t = string;
   let compare = compare;
@@ -10,7 +12,7 @@ type message = {
   avatar_id: string
 };
 type messages = array(message);
-type messages_by_room = MsgMap.t(messages);
+type messages_by_room_id = MsgMap.t(messages);
 
 let addMsg = (avatar_id, room, body, map) => {
   let msg = { body, avatar_id };
@@ -27,6 +29,44 @@ let getMsg = (room, map) =>
   | Not_found => [||]
   };
 
+/* type: room */
+
+module RoomMap = Map.Make({
+  type t = string;
+  let compare = compare;
+});
+
+type room = {
+  id: string,
+  color: string
+};
+type room_by_room_id = RoomMap.t(room);
+
+let uniqRooms = (room_id, rooms) => {
+  let rooms_l = Array.to_list(rooms);
+  if (List.mem(room_id, rooms_l)) {
+    rooms;
+  } else {
+    Array.concat([rooms, [|room_id|]]);
+  };
+};
+
+let upsertRoom = (room_id, color, rooms) => {
+  let room = { id: room_id, color };
+  RoomMap.add(room_id, room, rooms);
+};
+
+let roomClassName = (room_id_opt, rooms) => {
+  let color = switch (room_id_opt) {
+  | Some(room_id) =>
+    try(RoomMap.find(room_id, rooms).color) {
+    | Not_found => "green"
+    }
+  | None => "green"
+  };
+  "p-rooms p-rooms--" ++ color;
+};
+
 let subtract = (a1, a2) => {
   let l2 = Array.to_list(a2);
   Array.to_list(a1)
@@ -38,9 +78,10 @@ type ready_state = {
   id: string,
   socket: Socket.t,
   channel: Channel.t,
-  available: array(string),
-  rooms: array(string),
-  messages: messages_by_room,
+  rooms: room_by_room_id,
+  available: array(string), /* redundant? */
+  entered: array(string),
+  messages: messages_by_room_id,
   text: string,
   selected: option(string)
 };
@@ -52,26 +93,28 @@ type state =
 
 type action =
   | Connect
-  | Connected(string, Socket.t, Channel.t, array(string))
+  | Connected(string, Socket.t, Channel.t)
   | RoomCreate
   | RoomCreated(string)
   | RoomEnter(string)
   | RoomSelect(string)
+  | ReceiveRoomSetting(string, string)
+  | SendRoomSetting(string)
   | Send
   | Receive(string, string, string)
   | UpdateText(string);
 
 let component = ReasonReact.reducerComponent("App");
 
-type welcome_response = { id: string, rooms: array(string) };
-type created_response = { room_id: string };
-type receive_message = { source: string, room_id: string, body: string };
+type res_welcome = { id: string };
+type res_created = { room_id: string };
+type msg_message = { source: string, room_id: string, body: string };
+type msg_setting = { room_id: string, color: string };
 
 module Decode = {
   let welcome = json =>
     Json.Decode.{
-      id: json |> field("id", string),
-      rooms: json |> field("rooms", array(string))
+      id: json |> field("id", string)
     };
 
   let created = json =>
@@ -84,6 +127,12 @@ module Decode = {
       source: json |> field("source", string),
       room_id: json |> field("room_id", string),
       body: json |> field("body", string)
+    };
+
+  let setting = json =>
+    Json.Decode.{
+      room_id: json |> field("room_id", string),
+      color: json |> field("color", string)
     };
 };
 
@@ -107,27 +156,31 @@ let make = _children => {
             let { source, room_id, body } = Decode.receive(res);
             self.send(Receive(source, room_id, body));
           })
+          |> putOn("room:setting", (res: Abstract.any) => {
+            let { room_id, color } = Decode.setting(res);
+            self.send(ReceiveRoomSetting(room_id, color));
+          })
           |> joinChannel
           |> putReceive("ok", (res: Abstract.any) => {
             let welcome = Decode.welcome(res);
-            self.send(Connected(welcome.id, socket, channel, welcome.rooms));
+            self.send(Connected(welcome.id, socket, channel));
           });
       })
-    | Connected(id, socket, channel, rooms) =>
-      Js.log(rooms);
+    | Connected(id, socket, channel) =>
       ReasonReact.Update(Ready({
         id,
         socket,
         channel,
-        available: rooms,
-        rooms: [||],
+        rooms: RoomMap.empty,
+        available: [||],
+        entered: [||],
         messages: MsgMap.empty,
         text: "",
         selected: None
       }))
     | Send => ReasonReact.SideEffects(self => {
       switch (self.state) {
-      | Ready({ id, channel, rooms, text, selected }) =>
+      | Ready({ id, channel, text, selected }) =>
         switch (selected) {
         | Some(room) =>
           push("room:message", {"source": id, "room_id": room, "body": text}, channel) |> ignore;
@@ -140,13 +193,14 @@ let make = _children => {
       }})
     | Receive(source, room_id, body) =>
       switch (state) {
-      | Ready({ id, socket, channel, available, rooms, messages, text, selected }) =>
+      | Ready({ id, socket, channel, rooms, available, entered, messages, text, selected }) =>
         ReasonReact.Update(Ready({
           id,
           socket,
           channel,
-          available,
           rooms,
+          available,
+          entered,
           messages: addMsg(source, room_id, body, messages),
           text,
           selected
@@ -167,13 +221,14 @@ let make = _children => {
       }})
     | RoomCreated(room_id) =>
       switch (state) {
-      | Ready({ id, socket, channel, available, rooms, messages, text, selected }) =>
+      | Ready({ id, socket, channel, rooms, available, entered, messages, text, selected }) =>
         ReasonReact.Update(Ready({
           id,
           socket,
           channel,
-          available: Array.concat([available, [|room_id|]]),
-          rooms: Array.concat([rooms, [|room_id|]]),
+          rooms: upsertRoom(room_id, "green", rooms),
+          available: uniqRooms(room_id, available),
+          entered,
           messages,
           text,
           selected: Some(room_id)
@@ -182,14 +237,15 @@ let make = _children => {
       }
     | RoomEnter(room_id) =>
       switch (state) {
-      | Ready({ id, socket, channel, available, rooms, messages, text, selected }) =>
+      | Ready({ id, socket, channel, rooms, available, entered, messages, text, selected }) =>
         push("room:enter", {"source": id, "room_id": room_id}, channel);
         ReasonReact.Update(Ready({
           id,
           socket,
           channel,
-          available: available,
-          rooms: Array.concat([rooms, [|room_id|]]),
+          rooms,
+          available,
+          entered: uniqRooms(room_id, entered),
           messages,
           text,
           selected: Some(room_id)
@@ -198,28 +254,58 @@ let make = _children => {
       }
     | RoomSelect(room_id) =>
       switch (state) {
-      | Ready({ id, socket, channel, available, rooms, messages, text, selected }) =>
+      | Ready({ id, socket, channel, rooms, available, entered, messages, text, selected }) =>
         ReasonReact.Update(Ready({
           id,
           socket,
           channel,
-          available,
           rooms,
+          available,
+          entered,
           messages,
           text,
           selected: Some(room_id)
         }))
       | _ => ReasonReact.NoUpdate
       }
-    | UpdateText(input) =>
+    | ReceiveRoomSetting(room_id, color) =>
       switch (state) {
-      | Ready({ id, socket, channel, available, rooms, messages, text, selected }) =>
+      | Ready({ id, socket, channel, rooms, available, entered, messages, text, selected }) =>
         ReasonReact.Update(Ready({
           id,
           socket,
           channel,
-          available,
+          rooms: upsertRoom(room_id, color, rooms),
+          available: uniqRooms(room_id, available),
+          entered,
+          messages,
+          text,
+          selected
+        }))
+      | _ => ReasonReact.NoUpdate
+      }
+    | SendRoomSetting(color) => ReasonReact.SideEffects(self => {
+      switch (self.state) {
+      | Ready({ id, channel, selected }) =>
+        switch (selected) {
+        | Some(room) =>
+          push("room:setting", {"source": id, "room_id": room, "color": color}, channel) |> ignore;
+          /* Loopback. Update self state */
+          self.send(ReceiveRoomSetting(room, color));
+        | None => ()
+        }
+      | _ => ()
+      }})
+    | UpdateText(input) =>
+      switch (state) {
+      | Ready({ id, socket, channel, rooms, available, entered, messages, text, selected }) =>
+        ReasonReact.Update(Ready({
+          id,
+          socket,
+          channel,
           rooms,
+          available,
+          entered,
           messages,
           text: input,
           selected
@@ -230,9 +316,9 @@ let make = _children => {
   render: self => {
     <div className="p-container">
       (switch (self.state) {
-      | Ready({ id, available, rooms, messages, text, selected }) =>
+      | Ready({ id, rooms, available, entered, messages, text, selected }) =>
         <>
-          <div className="p-rooms">
+          <div className=(roomClassName(selected, rooms))>
             <header className="c-header">{ReasonReact.string("CizenChat")}</header>
             <div className="p-side-content">
               <div className="c-user">(ReasonReact.string("#" ++ id))</div>
@@ -245,7 +331,7 @@ let make = _children => {
                 <div className="c-list-header">(ReasonReact.string("Available Rooms"))</div>
                 <div className="c-list-body">
                   (
-                    subtract(available, rooms)
+                    subtract(available, entered)
                     |> Array.map(room =>
                       <div className="c-list-item" key=room onClick=(_event => self.send(RoomEnter(room)))>(ReasonReact.string(room))</div>
                     )
@@ -258,7 +344,7 @@ let make = _children => {
                 <div className="c-list-header">(ReasonReact.string("Joined Rooms"))</div>
                 <div className="c-list-body">
                   (
-                    rooms
+                    entered
                     |> Array.map(room =>
                       <div className="c-list-item" key=room onClick=(_event => self.send(RoomSelect(room)))>(ReasonReact.string(room))</div>
                     )
@@ -273,7 +359,14 @@ let make = _children => {
               (switch (selected) {
               | Some(room) =>
                 <>
-                  <div className="c-chat-header">(ReasonReact.string("#" ++ room))</div>
+                  <div className="c-chat-header">
+                    <span>(ReasonReact.string("Room #" ++ room))</span>
+                    <div className="c-colors">
+                      <div onClick=(_event => self.send(SendRoomSetting("red"))) className="c-colors-item c-colors-item--red"></div>
+                      <div onClick=(_event => self.send(SendRoomSetting("green"))) className="c-colors-item c-colors-item--green"></div>
+                      <div onClick=(_event => self.send(SendRoomSetting("blue"))) className="c-colors-item c-colors-item--blue"></div>
+                    </div>
+                  </div>
                   <div>
                     (
                       getMsg(room, messages)

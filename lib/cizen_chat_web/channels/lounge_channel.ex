@@ -1,7 +1,8 @@
 alias Cizen.Effects.{Subscribe, Dispatch, Request, Receive, Start}
-alias CizenChat.Events.{Lounge, Room}
+alias CizenChat.Events
+alias CizenChat.Events.{Transport, Lounge, Room}
 
-defmodule CizenChatWeb.TransportAutomaton do
+defmodule CizenChatWeb.Gateway do
   alias Phoenix.Channel
   use Cizen.Automaton
 
@@ -13,26 +14,53 @@ defmodule CizenChatWeb.TransportAutomaton do
   def spawn(id, %__MODULE__{socket: socket, avatar_id: avatar_id}) do
     perform id, %Subscribe{
       event_filter: EventFilter.new(
-        event_type: Room.Message.Transport,
+        event_type: Transport,
         event_body_filters: [
-          %Room.DestFilter{value: avatar_id},
-          %Room.DirectionFilter{value: :outgoing}
+          %Events.DestFilter{value: avatar_id},
+          %Events.DirectionFilter{value: :outgoing}
         ]
       )
     }
 
-    %{socket: socket}
+    perform id, %Subscribe{
+      event_filter: EventFilter.new(
+        event_type: Room.Message.Transport,
+        event_body_filters: [
+          %Events.DestFilter{value: avatar_id},
+          %Events.DirectionFilter{value: :outgoing}
+        ]
+      )
+    }
+
+    # FIXME: Advertising should be requested from Cizen, not the external layer
+    perform id, %Dispatch{
+      body: %Room.Advertise{
+        joiner_id: avatar_id
+      }
+    }
+
+    %{
+      avatar_id: avatar_id,
+      socket: socket
+    }
   end
 
   @impl true
-  def yield(id, %{socket: socket}) do
+  def yield(id, state) do
+    IO.puts("Gateway[#{state.avatar_id}]")
     event = perform id, %Receive{}
     case event.body do
+      %Transport{source: _source, dest: _dest, direction: _direction, body: body} ->
+        case body do
+          %Room.Setting{source: _source, room_id: room_id, color: color} ->
+            IO.puts("Gateway[#{state.avatar_id}] <= Transport(Room.Setting): room=#{room_id}")
+            Channel.push state.socket, "room:setting", %{room_id: room_id, color: color}
+        end
       %Room.Message.Transport{source: source, dest: _dest, direction: _direction, room_id: room_id, text: text} ->
-        IO.puts("TransportAutomaton <= Room.Message.Transport: '#{text}' from #{source} at #{room_id}")
-        Channel.push socket, "room:message", %{source: source, room_id: room_id, body: text}
+        IO.puts("Gateway[#{state.avatar_id}] <= Room.Message.Transport: '#{text}' from #{source} at #{room_id}")
+        Channel.push state.socket, "room:message", %{source: source, room_id: room_id, body: text}
     end
-    %{socket: socket}
+    state
   end
 end
 
@@ -41,14 +69,14 @@ defmodule CizenChatWeb.LoungeChannel do
   use Cizen.Effectful
 
   def join("lounge:hello", _message, socket) do
-    {avatar_id, rooms} = handle fn id ->
+    avatar_id = handle fn id ->
       welcome_event = perform id, %Request{body: %Lounge.Join{}}
-      {welcome_event.body.avatar_id, welcome_event.body.rooms}
+      welcome_event.body.avatar_id
     end
 
     send(self(), {:after_join, avatar_id})
 
-    {:ok, %{id: avatar_id, rooms: rooms}, socket}
+    {:ok, %{id: avatar_id}, socket}
   end
 
   def join("lounge:" <> _private_room_id, _params, _socket) do
@@ -56,11 +84,9 @@ defmodule CizenChatWeb.LoungeChannel do
   end
 
   def handle_info({:after_join, avatar_id}, socket) do
-    push socket, "room:hoge", %{hoge: :hoge}
-
     handle fn id ->
       perform id, %Start{
-        saga: %CizenChatWeb.TransportAutomaton{socket: socket, avatar_id: avatar_id}
+        saga: %CizenChatWeb.Gateway{socket: socket, avatar_id: avatar_id}
       }
     end
 
@@ -102,5 +128,24 @@ defmodule CizenChatWeb.LoungeChannel do
       }
     end
     {:reply, :ok, socket}
+  end
+
+  def handle_in("room:setting", %{"source" => source, "room_id" => room_id, "color" => color}, socket) do
+    IO.puts("Channel#room:setting: to=#{room_id}, color=#{color}, by=#{source}")
+    handle fn id ->
+      perform id, %Dispatch{
+        body: %Transport{
+          source: id, # Gateway's saga id
+          dest: source,
+          direction: :incoming,
+          body: %Room.Setting{
+            source: source,
+            room_id: room_id,
+            color: color
+          }
+        }
+      }
+    end
+    {:noreply, socket}
   end
 end

@@ -49,6 +49,52 @@ function getMsg(room, map) {
   }
 }
 
+var compare$1 = Caml_obj.caml_compare;
+
+var RoomMap = $$Map.Make(/* module */[/* compare */compare$1]);
+
+function uniqRooms(room_id, rooms) {
+  var rooms_l = $$Array.to_list(rooms);
+  if (List.mem(room_id, rooms_l)) {
+    return rooms;
+  } else {
+    return $$Array.concat(/* :: */[
+                rooms,
+                /* :: */[
+                  /* array */[room_id],
+                  /* [] */0
+                ]
+              ]);
+  }
+}
+
+function upsertRoom(room_id, color, rooms) {
+  var room = /* record */[
+    /* id */room_id,
+    /* color */color
+  ];
+  return Curry._3(RoomMap[/* add */3], room_id, room, rooms);
+}
+
+function roomClassName(room_id_opt, rooms) {
+  var color;
+  if (room_id_opt !== undefined) {
+    try {
+      color = Curry._2(RoomMap[/* find */21], room_id_opt, rooms)[/* color */1];
+    }
+    catch (exn){
+      if (exn === Caml_builtin_exceptions.not_found) {
+        color = "green";
+      } else {
+        throw exn;
+      }
+    }
+  } else {
+    color = "green";
+  }
+  return "p-rooms p-rooms--" + color;
+}
+
 function subtract(a1, a2) {
   var l2 = $$Array.to_list(a2);
   return $$Array.of_list(List.filter((function (e) {
@@ -59,12 +105,7 @@ function subtract(a1, a2) {
 var component = ReasonReact.reducerComponent("App");
 
 function welcome(json) {
-  return /* record */[
-          /* id */Json_decode.field("id", Json_decode.string, json),
-          /* rooms */Json_decode.field("rooms", (function (param) {
-                  return Json_decode.array(Json_decode.string, param);
-                }), json)
-        ];
+  return /* record */[/* id */Json_decode.field("id", Json_decode.string, json)];
 }
 
 function created(json) {
@@ -79,10 +120,18 @@ function receive(json) {
         ];
 }
 
+function setting(json) {
+  return /* record */[
+          /* room_id */Json_decode.field("room_id", Json_decode.string, json),
+          /* color */Json_decode.field("color", Json_decode.string, json)
+        ];
+}
+
 var Decode = /* module */[
   /* welcome */welcome,
   /* created */created,
-  /* receive */receive
+  /* receive */receive,
+  /* setting */setting
 ];
 
 function make() {
@@ -105,24 +154,41 @@ function make() {
                 tmp = React.createElement("div", undefined, "Connecting...");
               } else {
                 var match$1 = match[0];
-                var selected = match$1[/* selected */7];
-                var rooms = match$1[/* rooms */4];
+                var selected = match$1[/* selected */8];
+                var entered = match$1[/* entered */5];
                 var tmp$1;
                 if (selected !== undefined) {
                   var room = selected;
                   tmp$1 = React.createElement(React.Fragment, undefined, React.createElement("div", {
                             className: "c-chat-header"
-                          }, "#" + room), React.createElement("div", undefined, $$Array.mapi((function (i, msg) {
+                          }, React.createElement("span", undefined, "Room #" + room), React.createElement("div", {
+                                className: "c-colors"
+                              }, React.createElement("div", {
+                                    className: "c-colors-item c-colors-item--red",
+                                    onClick: (function () {
+                                        return Curry._1(self[/* send */3], /* SendRoomSetting */Block.__(5, ["red"]));
+                                      })
+                                  }), React.createElement("div", {
+                                    className: "c-colors-item c-colors-item--green",
+                                    onClick: (function () {
+                                        return Curry._1(self[/* send */3], /* SendRoomSetting */Block.__(5, ["green"]));
+                                      })
+                                  }), React.createElement("div", {
+                                    className: "c-colors-item c-colors-item--blue",
+                                    onClick: (function () {
+                                        return Curry._1(self[/* send */3], /* SendRoomSetting */Block.__(5, ["blue"]));
+                                      })
+                                  }))), React.createElement("div", undefined, $$Array.mapi((function (i, msg) {
                                   return React.createElement("div", {
                                               key: String(i),
                                               className: "c-message"
                                             }, React.createElement("b", undefined, msg[/* body */0]), React.createElement("i", undefined, " by " + msg[/* avatar_id */1]));
-                                }), getMsg(room, match$1[/* messages */5]))));
+                                }), getMsg(room, match$1[/* messages */6]))));
                 } else {
                   tmp$1 = React.createElement("p", undefined, "Select or create a room");
                 }
                 tmp = React.createElement(React.Fragment, undefined, React.createElement("div", {
-                          className: "p-rooms"
+                          className: roomClassName(selected, match$1[/* rooms */3])
                         }, React.createElement("header", {
                               className: "c-header"
                             }, "CizenChat"), React.createElement("div", {
@@ -148,7 +214,7 @@ function make() {
                                                             return Curry._1(self[/* send */3], /* RoomEnter */Block.__(2, [room]));
                                                           })
                                                       }, room);
-                                          }), subtract(match$1[/* available */3], rooms)))), React.createElement("div", {
+                                          }), subtract(match$1[/* available */4], entered)))), React.createElement("div", {
                                   className: "c-list"
                                 }, React.createElement("div", {
                                       className: "c-list-header"
@@ -162,7 +228,7 @@ function make() {
                                                             return Curry._1(self[/* send */3], /* RoomSelect */Block.__(3, [room]));
                                                           })
                                                       }, room);
-                                          }), rooms))))), React.createElement("div", {
+                                          }), entered))))), React.createElement("div", {
                           className: "p-chat"
                         }, React.createElement("div", {
                               className: "c-chat"
@@ -173,7 +239,7 @@ function make() {
                                 }, React.createElement("textarea", {
                                       placeholder: "What's up?",
                                       rows: 1,
-                                      value: match$1[/* text */6],
+                                      value: match$1[/* text */7],
                                       onKeyDown: (function ($$event) {
                                           if ($$event.keyCode === 13) {
                                             $$event.preventDefault();
@@ -183,7 +249,7 @@ function make() {
                                           }
                                         }),
                                       onChange: (function ($$event) {
-                                          return Curry._1(self[/* send */3], /* UpdateText */Block.__(5, [$$event.target.value]));
+                                          return Curry._1(self[/* send */3], /* UpdateText */Block.__(7, [$$event.target.value]));
                                         })
                                     })))), React.createElement("div", {
                           className: "p-avatars"
@@ -207,21 +273,26 @@ function make() {
                                     var channel = (function (eta) {
                                           return Phx.initChannel("lounge:hello", undefined, eta);
                                         })(socket);
-                                    var eta$1 = Phx.putOn("room:message", (function (res) {
-                                            var match = receive(res);
-                                            return Curry._1(self[/* send */3], /* Receive */Block.__(4, [
-                                                          match[/* source */0],
-                                                          match[/* room_id */1],
-                                                          match[/* body */2]
+                                    var eta$1 = Phx.putOn("room:setting", (function (res) {
+                                            var match = setting(res);
+                                            return Curry._1(self[/* send */3], /* ReceiveRoomSetting */Block.__(4, [
+                                                          match[/* room_id */0],
+                                                          match[/* color */1]
                                                         ]));
-                                          }), channel);
+                                          }), Phx.putOn("room:message", (function (res) {
+                                                var match = receive(res);
+                                                return Curry._1(self[/* send */3], /* Receive */Block.__(6, [
+                                                              match[/* source */0],
+                                                              match[/* room_id */1],
+                                                              match[/* body */2]
+                                                            ]));
+                                              }), channel));
                                     Phx.putReceive("ok", (function (res) {
                                             var welcome$1 = welcome(res);
                                             return Curry._1(self[/* send */3], /* Connected */Block.__(0, [
                                                           welcome$1[/* id */0],
                                                           socket,
-                                                          channel,
-                                                          welcome$1[/* rooms */1]
+                                                          channel
                                                         ]));
                                           }), Phx.joinChannel(undefined, eta$1));
                                     return /* () */0;
@@ -249,22 +320,22 @@ function make() {
                                       return /* () */0;
                                     } else {
                                       var match$1 = match[0];
-                                      var selected = match$1[/* selected */7];
+                                      var selected = match$1[/* selected */8];
                                       if (selected !== undefined) {
                                         var room = selected;
-                                        var text = match$1[/* text */6];
+                                        var text = match$1[/* text */7];
                                         var id = match$1[/* id */0];
                                         Phx.push("room:message", {
                                               source: id,
                                               room_id: room,
                                               body: text
                                             }, undefined, match$1[/* channel */2]);
-                                        Curry._1(self[/* send */3], /* Receive */Block.__(4, [
+                                        Curry._1(self[/* send */3], /* Receive */Block.__(6, [
                                                 id,
                                                 room,
                                                 text
                                               ]));
-                                        return Curry._1(self[/* send */3], /* UpdateText */Block.__(5, [""]));
+                                        return Curry._1(self[/* send */3], /* UpdateText */Block.__(7, [""]));
                                       } else {
                                         return /* () */0;
                                       }
@@ -275,14 +346,13 @@ function make() {
               } else {
                 switch (action.tag | 0) {
                   case 0 : 
-                      var rooms = action[3];
-                      console.log(rooms);
                       return /* Update */Block.__(0, [/* Ready */[/* record */[
                                     /* id */action[0],
                                     /* socket */action[1],
                                     /* channel */action[2],
-                                    /* available */rooms,
-                                    /* rooms : array */[],
+                                    /* rooms */RoomMap[/* empty */0],
+                                    /* available : array */[],
+                                    /* entered : array */[],
                                     /* messages */MsgMap[/* empty */0],
                                     /* text */"",
                                     /* selected */undefined
@@ -297,22 +367,11 @@ function make() {
                                       /* id */match[/* id */0],
                                       /* socket */match[/* socket */1],
                                       /* channel */match[/* channel */2],
-                                      /* available */$$Array.concat(/* :: */[
-                                            match[/* available */3],
-                                            /* :: */[
-                                              /* array */[room_id],
-                                              /* [] */0
-                                            ]
-                                          ]),
-                                      /* rooms */$$Array.concat(/* :: */[
-                                            match[/* rooms */4],
-                                            /* :: */[
-                                              /* array */[room_id],
-                                              /* [] */0
-                                            ]
-                                          ]),
-                                      /* messages */match[/* messages */5],
-                                      /* text */match[/* text */6],
+                                      /* rooms */upsertRoom(room_id, "green", match[/* rooms */3]),
+                                      /* available */uniqRooms(room_id, match[/* available */4]),
+                                      /* entered */match[/* entered */5],
+                                      /* messages */match[/* messages */6],
+                                      /* text */match[/* text */7],
                                       /* selected */room_id
                                     ]]]);
                       }
@@ -332,16 +391,11 @@ function make() {
                                       /* id */id,
                                       /* socket */match$1[/* socket */1],
                                       /* channel */channel,
-                                      /* available */match$1[/* available */3],
-                                      /* rooms */$$Array.concat(/* :: */[
-                                            match$1[/* rooms */4],
-                                            /* :: */[
-                                              /* array */[room_id$1],
-                                              /* [] */0
-                                            ]
-                                          ]),
-                                      /* messages */match$1[/* messages */5],
-                                      /* text */match$1[/* text */6],
+                                      /* rooms */match$1[/* rooms */3],
+                                      /* available */match$1[/* available */4],
+                                      /* entered */uniqRooms(room_id$1, match$1[/* entered */5]),
+                                      /* messages */match$1[/* messages */6],
+                                      /* text */match$1[/* text */7],
                                       /* selected */room_id$1
                                     ]]]);
                       }
@@ -354,14 +408,16 @@ function make() {
                                       /* id */match$2[/* id */0],
                                       /* socket */match$2[/* socket */1],
                                       /* channel */match$2[/* channel */2],
-                                      /* available */match$2[/* available */3],
-                                      /* rooms */match$2[/* rooms */4],
-                                      /* messages */match$2[/* messages */5],
-                                      /* text */match$2[/* text */6],
+                                      /* rooms */match$2[/* rooms */3],
+                                      /* available */match$2[/* available */4],
+                                      /* entered */match$2[/* entered */5],
+                                      /* messages */match$2[/* messages */6],
+                                      /* text */match$2[/* text */7],
                                       /* selected */action[0]
                                     ]]]);
                       }
                   case 4 : 
+                      var room_id$2 = action[0];
                       if (typeof state === "number") {
                         return /* NoUpdate */0;
                       } else {
@@ -370,14 +426,40 @@ function make() {
                                       /* id */match$3[/* id */0],
                                       /* socket */match$3[/* socket */1],
                                       /* channel */match$3[/* channel */2],
-                                      /* available */match$3[/* available */3],
-                                      /* rooms */match$3[/* rooms */4],
-                                      /* messages */addMsg(action[0], action[1], action[2], match$3[/* messages */5]),
-                                      /* text */match$3[/* text */6],
-                                      /* selected */match$3[/* selected */7]
+                                      /* rooms */upsertRoom(room_id$2, action[1], match$3[/* rooms */3]),
+                                      /* available */uniqRooms(room_id$2, match$3[/* available */4]),
+                                      /* entered */match$3[/* entered */5],
+                                      /* messages */match$3[/* messages */6],
+                                      /* text */match$3[/* text */7],
+                                      /* selected */match$3[/* selected */8]
                                     ]]]);
                       }
                   case 5 : 
+                      var color = action[0];
+                      return /* SideEffects */Block.__(1, [(function (self) {
+                                    var match = self[/* state */1];
+                                    if (typeof match === "number") {
+                                      return /* () */0;
+                                    } else {
+                                      var match$1 = match[0];
+                                      var selected = match$1[/* selected */8];
+                                      if (selected !== undefined) {
+                                        var room = selected;
+                                        Phx.push("room:setting", {
+                                              source: match$1[/* id */0],
+                                              room_id: room,
+                                              color: color
+                                            }, undefined, match$1[/* channel */2]);
+                                        return Curry._1(self[/* send */3], /* ReceiveRoomSetting */Block.__(4, [
+                                                      room,
+                                                      color
+                                                    ]));
+                                      } else {
+                                        return /* () */0;
+                                      }
+                                    }
+                                  })]);
+                  case 6 : 
                       if (typeof state === "number") {
                         return /* NoUpdate */0;
                       } else {
@@ -386,11 +468,29 @@ function make() {
                                       /* id */match$4[/* id */0],
                                       /* socket */match$4[/* socket */1],
                                       /* channel */match$4[/* channel */2],
-                                      /* available */match$4[/* available */3],
-                                      /* rooms */match$4[/* rooms */4],
-                                      /* messages */match$4[/* messages */5],
+                                      /* rooms */match$4[/* rooms */3],
+                                      /* available */match$4[/* available */4],
+                                      /* entered */match$4[/* entered */5],
+                                      /* messages */addMsg(action[0], action[1], action[2], match$4[/* messages */6]),
+                                      /* text */match$4[/* text */7],
+                                      /* selected */match$4[/* selected */8]
+                                    ]]]);
+                      }
+                  case 7 : 
+                      if (typeof state === "number") {
+                        return /* NoUpdate */0;
+                      } else {
+                        var match$5 = state[0];
+                        return /* Update */Block.__(0, [/* Ready */[/* record */[
+                                      /* id */match$5[/* id */0],
+                                      /* socket */match$5[/* socket */1],
+                                      /* channel */match$5[/* channel */2],
+                                      /* rooms */match$5[/* rooms */3],
+                                      /* available */match$5[/* available */4],
+                                      /* entered */match$5[/* entered */5],
+                                      /* messages */match$5[/* messages */6],
                                       /* text */action[0],
-                                      /* selected */match$4[/* selected */7]
+                                      /* selected */match$5[/* selected */8]
                                     ]]]);
                       }
                   
@@ -404,6 +504,10 @@ function make() {
 exports.MsgMap = MsgMap;
 exports.addMsg = addMsg;
 exports.getMsg = getMsg;
+exports.RoomMap = RoomMap;
+exports.uniqRooms = uniqRooms;
+exports.upsertRoom = upsertRoom;
+exports.roomClassName = roomClassName;
 exports.subtract = subtract;
 exports.component = component;
 exports.Decode = Decode;

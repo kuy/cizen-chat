@@ -1,6 +1,7 @@
 alias Cizen.Effects.{Receive, Subscribe, Start, Dispatch}
 alias Cizen.EventFilter
 alias CizenChat.Automata
+alias CizenChat.Events
 alias CizenChat.Events.Room
 
 defmodule CizenChat.Automata.Avatar do
@@ -14,7 +15,7 @@ defmodule CizenChat.Automata.Avatar do
       event_filter: EventFilter.new(
         event_type: Room.Create,
         event_body_filters: [
-          %Room.SourceFilter{value: id}
+          %Events.SourceFilter{value: id}
         ]
       )
     }
@@ -23,7 +24,7 @@ defmodule CizenChat.Automata.Avatar do
       event_filter: EventFilter.new(
         event_type: Room.Enter,
         event_body_filters: [
-          %Room.SourceFilter{value: id}
+          %Events.SourceFilter{value: id}
         ]
       )
     }
@@ -33,9 +34,9 @@ defmodule CizenChat.Automata.Avatar do
       event_filter: EventFilter.new(
         event_type: Room.Message.Transport,
         event_body_filters: [
-          %Room.SourceFilter{value: id},
-          %Room.DestFilter{value: id},
-          %Room.DirectionFilter{value: :incoming}
+          %Events.SourceFilter{value: id},
+          %Events.DestFilter{value: id},
+          %Events.DirectionFilter{value: :incoming}
         ]
       )
     }
@@ -45,7 +46,7 @@ defmodule CizenChat.Automata.Avatar do
       event_filter: EventFilter.new(
         event_type: Room.Message,
         event_body_filters: [
-          %Room.DestFilter{value: id}
+          %Events.DestFilter{value: id}
         ]
       )
     }

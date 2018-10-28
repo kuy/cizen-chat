@@ -22,20 +22,30 @@ body {
 .p-rooms {
   flex: 1;
   color: white;
+}
 
+.p-rooms--red {
+  background: rgb(224,69,123);
+  background: -moz-linear-gradient(top, rgb(224,69,123) 0%, rgb(211,67,180) 100%);
+  background: -webkit-linear-gradient(top, rgb(224,69,123) 0%,rgb(211,67,180) 100%);
+  background: linear-gradient(to bottom, rgb(224,69,123) 0%,rgb(211,67,180) 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#e0457b', endColorstr='#d343b4',GradientType=0 );
+}
+
+.p-rooms--green {
   background: rgb(81,219,98);
   background: -moz-linear-gradient(top, rgb(81,219,98) 0%, rgb(67,216,151) 100%);
   background: -webkit-linear-gradient(top, rgb(81,219,98) 0%,rgb(67,216,151) 100%);
   background: linear-gradient(to bottom, rgb(81,219,98) 0%,rgb(67,216,151) 100%);
   filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#51db62', endColorstr='#43d897',GradientType=0 );
+}
 
-/*
-  background: rgb(144,233,160);
-  background: -moz-linear-gradient(left, rgba(144,233,160,1) 0%, rgba(81,216,97,1) 100%);
-  background: -webkit-linear-gradient(left, rgba(144,233,160,1) 0%,rgba(81,216,97,1) 100%);
-  background: linear-gradient(to right, rgba(144,233,160,1) 0%,rgba(81,216,97,1) 100%);
-  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#90e9a0', endColorstr='#51d861',GradientType=1 );
-*/
+.p-rooms--blue {
+  background: rgb(61,149,226);
+  background: -moz-linear-gradient(top, rgb(61,149,226) 0%, rgb(105,81,214) 100%);
+  background: -webkit-linear-gradient(top, rgb(61,149,226) 0%,rgb(105,81,214) 100%);
+  background: linear-gradient(to bottom, rgb(61,149,226) 0%,rgb(105,81,214) 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#3d95e2', endColorstr='#6951d6',GradientType=0 );
 }
 
 .p-chat {
@@ -119,6 +129,33 @@ body {
   font-size: 18px;
   padding: 10px 0 0 12px;
   border-bottom: 1px solid rgb(236, 236, 236);
+  display: flex;
+  justify-content: space-between;
+}
+
+.c-colors {
+  display: flex;
+}
+
+.c-colors-item {
+  flex: 1;
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  margin: 0 4px;
+  cursor: pointer;
+}
+
+.c-colors-item--red {
+  background-color: rgb(224,69,123);
+}
+
+.c-colors-item--green {
+  background-color: rgb(81,219,98);
+}
+
+.c-colors-item--blue {
+  background-color: rgb(61,149,226);
 }
 
 .c-message {
