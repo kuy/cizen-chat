@@ -102,49 +102,67 @@ function make() {
               var match = self[/* state */1];
               var tmp;
               if (typeof match === "number") {
-                tmp = React.createElement("h2", undefined, "Connecting...");
+                tmp = React.createElement("div", undefined, "Connecting...");
               } else {
                 var match$1 = match[0];
-                var text = match$1[/* text */6];
-                var messages = match$1[/* messages */5];
+                var selected = match$1[/* selected */7];
                 var rooms = match$1[/* rooms */4];
-                tmp = React.createElement(React.Fragment, undefined, React.createElement("h2", undefined, "Client ID: " + match$1[/* id */0]), React.createElement("button", {
-                          onClick: (function () {
-                              return Curry._1(self[/* send */3], /* RoomCreate */1);
-                            })
-                        }, "Create Room"), React.createElement("h2", undefined, "Available Rooms"), React.createElement("ul", undefined, $$Array.map((function (room) {
-                                return React.createElement("li", {
-                                            key: room
-                                          }, React.createElement("a", {
-                                                onClick: (function () {
-                                                    return Curry._1(self[/* send */3], /* RoomEnter */Block.__(2, [room]));
-                                                  })
-                                              }, room));
-                              }), subtract(match$1[/* available */3], rooms))), React.createElement("h2", undefined, "Entered Rooms"), React.createElement("ul", undefined, $$Array.map((function (room) {
-                                return React.createElement("li", {
-                                            key: room
-                                          }, room, React.createElement("ul", undefined, $$Array.mapi((function (i, msg) {
-                                                      return React.createElement("li", {
-                                                                  key: String(i)
-                                                                }, React.createElement("b", undefined, msg[/* body */0]), React.createElement("i", undefined, " by " + msg[/* avatar_id */1]));
-                                                    }), getMsg(room, messages)), React.createElement("li", undefined, React.createElement("input", {
-                                                        placeholder: "What's up?",
-                                                        value: text,
-                                                        onKeyDown: (function ($$event) {
-                                                            if ($$event.keyCode === 13) {
-                                                              $$event.preventDefault();
-                                                              return Curry._1(self[/* send */3], /* Send */Block.__(3, [room]));
-                                                            } else {
-                                                              return 0;
-                                                            }
-                                                          }),
-                                                        onChange: (function ($$event) {
-                                                            return Curry._1(self[/* send */3], /* UpdateText */Block.__(5, [$$event.target.value]));
-                                                          })
-                                                      }))));
-                              }), rooms)));
+                var tmp$1;
+                if (selected !== undefined) {
+                  var room = selected;
+                  tmp$1 = React.createElement(React.Fragment, undefined, React.createElement("h2", undefined, "#" + room), React.createElement("ul", undefined, $$Array.mapi((function (i, msg) {
+                                  return React.createElement("li", {
+                                              key: String(i)
+                                            }, React.createElement("b", undefined, msg[/* body */0]), React.createElement("i", undefined, " by " + msg[/* avatar_id */1]));
+                                }), getMsg(room, match$1[/* messages */5])), React.createElement("li", undefined, React.createElement("input", {
+                                    placeholder: "What's up?",
+                                    value: match$1[/* text */6],
+                                    onKeyDown: (function ($$event) {
+                                        if ($$event.keyCode === 13) {
+                                          $$event.preventDefault();
+                                          return Curry._1(self[/* send */3], /* Send */2);
+                                        } else {
+                                          return 0;
+                                        }
+                                      }),
+                                    onChange: (function ($$event) {
+                                        return Curry._1(self[/* send */3], /* UpdateText */Block.__(5, [$$event.target.value]));
+                                      })
+                                  }))));
+                } else {
+                  tmp$1 = React.createElement("p", undefined, "Select or create a room");
+                }
+                tmp = React.createElement(React.Fragment, undefined, React.createElement("div", {
+                          className: "rooms"
+                        }, React.createElement("h1", undefined, "CizenChat"), React.createElement("p", undefined, "#" + match$1[/* id */0]), React.createElement("button", {
+                              onClick: (function () {
+                                  return Curry._1(self[/* send */3], /* RoomCreate */1);
+                                })
+                            }, "Create Room"), React.createElement("h3", undefined, "Available Rooms"), React.createElement("ul", undefined, $$Array.map((function (room) {
+                                    return React.createElement("li", {
+                                                key: room
+                                              }, React.createElement("a", {
+                                                    onClick: (function () {
+                                                        return Curry._1(self[/* send */3], /* RoomEnter */Block.__(2, [room]));
+                                                      })
+                                                  }, room));
+                                  }), subtract(match$1[/* available */3], rooms))), React.createElement("h3", undefined, "Entered Rooms"), React.createElement("ul", undefined, $$Array.map((function (room) {
+                                    return React.createElement("li", {
+                                                key: room
+                                              }, React.createElement("a", {
+                                                    onClick: (function () {
+                                                        return Curry._1(self[/* send */3], /* RoomSelect */Block.__(3, [room]));
+                                                      })
+                                                  }, room));
+                                  }), rooms))), React.createElement("div", {
+                          className: "chat"
+                        }, tmp$1), React.createElement("div", {
+                          className: "avatars"
+                        }));
               }
-              return React.createElement("div", undefined, React.createElement("h1", undefined, "CizenChat"), tmp);
+              return React.createElement("div", {
+                          className: "container"
+                        }, tmp);
             }),
           /* initialState */(function () {
               return /* Connecting */0;
@@ -152,48 +170,78 @@ function make() {
           /* retainedProps */component[/* retainedProps */11],
           /* reducer */(function (action, state) {
               if (typeof action === "number") {
-                if (action === 0) {
-                  return /* SideEffects */Block.__(1, [(function (self) {
-                                var eta = Phx.initSocket(undefined, "/socket");
-                                var socket = Phx.connectSocket(undefined, eta);
-                                var channel = (function (eta) {
-                                      return Phx.initChannel("lounge:hello", undefined, eta);
-                                    })(socket);
-                                var eta$1 = Phx.putOn("room:message", (function (res) {
-                                        var match = receive(res);
-                                        return Curry._1(self[/* send */3], /* Receive */Block.__(4, [
-                                                      match[/* source */0],
-                                                      match[/* room_id */1],
-                                                      match[/* body */2]
-                                                    ]));
-                                      }), channel);
-                                Phx.putReceive("ok", (function (res) {
-                                        var welcome$1 = welcome(res);
-                                        return Curry._1(self[/* send */3], /* Connected */Block.__(0, [
-                                                      welcome$1[/* id */0],
-                                                      socket,
-                                                      channel,
-                                                      welcome$1[/* rooms */1]
-                                                    ]));
-                                      }), Phx.joinChannel(undefined, eta$1));
-                                return /* () */0;
-                              })]);
-                } else {
-                  return /* SideEffects */Block.__(1, [(function (self) {
-                                var match = self[/* state */1];
-                                if (typeof match === "number") {
-                                  return /* () */0;
-                                } else {
-                                  var match$1 = match[0];
-                                  Phx.putReceive("ok", (function (res) {
-                                          var room_id = created(res)[/* room_id */0];
-                                          return Curry._1(self[/* send */3], /* RoomCreated */Block.__(1, [room_id]));
-                                        }), Phx.push("room:create", {
-                                            source: match$1[/* id */0]
-                                          }, undefined, match$1[/* channel */2]));
-                                  return /* () */0;
-                                }
-                              })]);
+                switch (action) {
+                  case 0 : 
+                      return /* SideEffects */Block.__(1, [(function (self) {
+                                    var eta = Phx.initSocket(undefined, "/socket");
+                                    var socket = Phx.connectSocket(undefined, eta);
+                                    var channel = (function (eta) {
+                                          return Phx.initChannel("lounge:hello", undefined, eta);
+                                        })(socket);
+                                    var eta$1 = Phx.putOn("room:message", (function (res) {
+                                            var match = receive(res);
+                                            return Curry._1(self[/* send */3], /* Receive */Block.__(4, [
+                                                          match[/* source */0],
+                                                          match[/* room_id */1],
+                                                          match[/* body */2]
+                                                        ]));
+                                          }), channel);
+                                    Phx.putReceive("ok", (function (res) {
+                                            var welcome$1 = welcome(res);
+                                            return Curry._1(self[/* send */3], /* Connected */Block.__(0, [
+                                                          welcome$1[/* id */0],
+                                                          socket,
+                                                          channel,
+                                                          welcome$1[/* rooms */1]
+                                                        ]));
+                                          }), Phx.joinChannel(undefined, eta$1));
+                                    return /* () */0;
+                                  })]);
+                  case 1 : 
+                      return /* SideEffects */Block.__(1, [(function (self) {
+                                    var match = self[/* state */1];
+                                    if (typeof match === "number") {
+                                      return /* () */0;
+                                    } else {
+                                      var match$1 = match[0];
+                                      Phx.putReceive("ok", (function (res) {
+                                              var room_id = created(res)[/* room_id */0];
+                                              return Curry._1(self[/* send */3], /* RoomCreated */Block.__(1, [room_id]));
+                                            }), Phx.push("room:create", {
+                                                source: match$1[/* id */0]
+                                              }, undefined, match$1[/* channel */2]));
+                                      return /* () */0;
+                                    }
+                                  })]);
+                  case 2 : 
+                      return /* SideEffects */Block.__(1, [(function (self) {
+                                    var match = self[/* state */1];
+                                    if (typeof match === "number") {
+                                      return /* () */0;
+                                    } else {
+                                      var match$1 = match[0];
+                                      var selected = match$1[/* selected */7];
+                                      if (selected !== undefined) {
+                                        var room = selected;
+                                        var text = match$1[/* text */6];
+                                        var id = match$1[/* id */0];
+                                        Phx.push("room:message", {
+                                              source: id,
+                                              room_id: room,
+                                              body: text
+                                            }, undefined, match$1[/* channel */2]);
+                                        Curry._1(self[/* send */3], /* Receive */Block.__(4, [
+                                                id,
+                                                room,
+                                                text
+                                              ]));
+                                        return Curry._1(self[/* send */3], /* UpdateText */Block.__(5, [""]));
+                                      } else {
+                                        return /* () */0;
+                                      }
+                                    }
+                                  })]);
+                  
                 }
               } else {
                 switch (action.tag | 0) {
@@ -207,7 +255,8 @@ function make() {
                                     /* available */rooms,
                                     /* rooms : array */[],
                                     /* messages */MsgMap[/* empty */0],
-                                    /* text */""
+                                    /* text */"",
+                                    /* selected */undefined
                                   ]]]);
                   case 1 : 
                       var room_id = action[0];
@@ -234,7 +283,8 @@ function make() {
                                             ]
                                           ]),
                                       /* messages */match[/* messages */5],
-                                      /* text */match[/* text */6]
+                                      /* text */match[/* text */6],
+                                      /* selected */room_id
                                     ]]]);
                       }
                   case 2 : 
@@ -262,33 +312,11 @@ function make() {
                                             ]
                                           ]),
                                       /* messages */match$1[/* messages */5],
-                                      /* text */match$1[/* text */6]
+                                      /* text */match$1[/* text */6],
+                                      /* selected */room_id$1
                                     ]]]);
                       }
                   case 3 : 
-                      var room = action[0];
-                      return /* SideEffects */Block.__(1, [(function (self) {
-                                    var match = self[/* state */1];
-                                    if (typeof match === "number") {
-                                      return /* () */0;
-                                    } else {
-                                      var match$1 = match[0];
-                                      var text = match$1[/* text */6];
-                                      var id = match$1[/* id */0];
-                                      Phx.push("room:message", {
-                                            source: id,
-                                            room_id: room,
-                                            body: text
-                                          }, undefined, match$1[/* channel */2]);
-                                      Curry._1(self[/* send */3], /* Receive */Block.__(4, [
-                                              id,
-                                              room,
-                                              text
-                                            ]));
-                                      return Curry._1(self[/* send */3], /* UpdateText */Block.__(5, [""]));
-                                    }
-                                  })]);
-                  case 4 : 
                       if (typeof state === "number") {
                         return /* NoUpdate */0;
                       } else {
@@ -299,11 +327,12 @@ function make() {
                                       /* channel */match$2[/* channel */2],
                                       /* available */match$2[/* available */3],
                                       /* rooms */match$2[/* rooms */4],
-                                      /* messages */addMsg(action[0], action[1], action[2], match$2[/* messages */5]),
-                                      /* text */match$2[/* text */6]
+                                      /* messages */match$2[/* messages */5],
+                                      /* text */match$2[/* text */6],
+                                      /* selected */action[0]
                                     ]]]);
                       }
-                  case 5 : 
+                  case 4 : 
                       if (typeof state === "number") {
                         return /* NoUpdate */0;
                       } else {
@@ -314,8 +343,25 @@ function make() {
                                       /* channel */match$3[/* channel */2],
                                       /* available */match$3[/* available */3],
                                       /* rooms */match$3[/* rooms */4],
-                                      /* messages */match$3[/* messages */5],
-                                      /* text */action[0]
+                                      /* messages */addMsg(action[0], action[1], action[2], match$3[/* messages */5]),
+                                      /* text */match$3[/* text */6],
+                                      /* selected */match$3[/* selected */7]
+                                    ]]]);
+                      }
+                  case 5 : 
+                      if (typeof state === "number") {
+                        return /* NoUpdate */0;
+                      } else {
+                        var match$4 = state[0];
+                        return /* Update */Block.__(0, [/* Ready */[/* record */[
+                                      /* id */match$4[/* id */0],
+                                      /* socket */match$4[/* socket */1],
+                                      /* channel */match$4[/* channel */2],
+                                      /* available */match$4[/* available */3],
+                                      /* rooms */match$4[/* rooms */4],
+                                      /* messages */match$4[/* messages */5],
+                                      /* text */action[0],
+                                      /* selected */match$4[/* selected */7]
                                     ]]]);
                       }
                   

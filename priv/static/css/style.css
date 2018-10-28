@@ -1,0 +1,15 @@
+.container {
+  display: flex;
+}
+
+.rooms {
+  flex: 1;
+}
+
+.chat {
+  flex: 4;
+}
+
+.avatars {
+  flex: 1;
+}

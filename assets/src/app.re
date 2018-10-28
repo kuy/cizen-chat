@@ -41,7 +41,8 @@ type ready_state = {
   available: array(string),
   rooms: array(string),
   messages: messages_by_room,
-  text: string
+  text: string,
+  selected: option(string)
 };
 
 type state =
@@ -55,7 +56,8 @@ type action =
   | RoomCreate
   | RoomCreated(string)
   | RoomEnter(string)
-  | Send(string)
+  | RoomSelect(string)
+  | Send
   | Receive(string, string, string)
   | UpdateText(string);
 
@@ -120,20 +122,25 @@ let make = _children => {
         available: rooms,
         rooms: [||],
         messages: MsgMap.empty,
-        text: ""
+        text: "",
+        selected: None
       }))
-    | Send(room) => ReasonReact.SideEffects(self => {
+    | Send => ReasonReact.SideEffects(self => {
       switch (self.state) {
-      | Ready({ id, channel, rooms, text }) =>
-        push("room:message", {"source": id, "room_id": room, "body": text}, channel) |> ignore;
-        /* Loopback. Update self state */
-        self.send(Receive(id, room, text));
-        self.send(UpdateText(""));
+      | Ready({ id, channel, rooms, text, selected }) =>
+        switch (selected) {
+        | Some(room) =>
+          push("room:message", {"source": id, "room_id": room, "body": text}, channel) |> ignore;
+          /* Loopback. Update self state */
+          self.send(Receive(id, room, text));
+          self.send(UpdateText(""));
+        | None => ()
+        }
       | _ => ()
       }})
     | Receive(source, room_id, body) =>
       switch (state) {
-      | Ready({ id, socket, channel, available, rooms, messages, text }) =>
+      | Ready({ id, socket, channel, available, rooms, messages, text, selected }) =>
         ReasonReact.Update(Ready({
           id,
           socket,
@@ -141,7 +148,8 @@ let make = _children => {
           available,
           rooms,
           messages: addMsg(source, room_id, body, messages),
-          text
+          text,
+          selected
         }))
       | _ => ReasonReact.NoUpdate
       }
@@ -159,7 +167,7 @@ let make = _children => {
       }})
     | RoomCreated(room_id) =>
       switch (state) {
-      | Ready({ id, socket, channel, available, rooms, messages, text }) =>
+      | Ready({ id, socket, channel, available, rooms, messages, text, selected }) =>
         ReasonReact.Update(Ready({
           id,
           socket,
@@ -167,13 +175,14 @@ let make = _children => {
           available: Array.concat([available, [|room_id|]]),
           rooms: Array.concat([rooms, [|room_id|]]),
           messages,
-          text
+          text,
+          selected: Some(room_id)
         }))
       | _ => ReasonReact.NoUpdate
-      };
+      }
     | RoomEnter(room_id) =>
       switch (state) {
-      | Ready({ id, socket, channel, available, rooms, messages, text }) =>
+      | Ready({ id, socket, channel, available, rooms, messages, text, selected }) =>
         push("room:enter", {"source": id, "room_id": room_id}, channel);
         ReasonReact.Update(Ready({
           id,
@@ -182,13 +191,14 @@ let make = _children => {
           available: available,
           rooms: Array.concat([rooms, [|room_id|]]),
           messages,
-          text
+          text,
+          selected: Some(room_id)
         }))
       | _ => ReasonReact.NoUpdate
-      };
-    | UpdateText(input) =>
+      }
+    | RoomSelect(room_id) =>
       switch (state) {
-      | Ready({ id, socket, channel, available, rooms, messages, text }) =>
+      | Ready({ id, socket, channel, available, rooms, messages, text, selected }) =>
         ReasonReact.Update(Ready({
           id,
           socket,
@@ -196,79 +206,107 @@ let make = _children => {
           available,
           rooms,
           messages,
-          text: input
+          text,
+          selected: Some(room_id)
         }))
       | _ => ReasonReact.NoUpdate
-      };
+      }
+    | UpdateText(input) =>
+      switch (state) {
+      | Ready({ id, socket, channel, available, rooms, messages, text, selected }) =>
+        ReasonReact.Update(Ready({
+          id,
+          socket,
+          channel,
+          available,
+          rooms,
+          messages,
+          text: input,
+          selected
+        }))
+      | _ => ReasonReact.NoUpdate
+      }
     },
   render: self => {
-    <div>
-      <h1>{ReasonReact.string("CizenChat")}</h1>
+    <div className="container">
       (switch (self.state) {
-      | Ready({ id, available, rooms, messages, text }) =>
+      | Ready({ id, available, rooms, messages, text, selected }) =>
         <>
-          <h2>(ReasonReact.string("Client ID: " ++ id))</h2>
+          <div className="rooms">
+            <h1>{ReasonReact.string("CizenChat")}</h1>
+            <p>(ReasonReact.string("#" ++ id))</p>
+            <button onClick=(_event => self.send(RoomCreate))>
+              (ReasonReact.string("Create Room"))
+            </button>
 
-          <button onClick=(_event => self.send(RoomCreate))>
-            (ReasonReact.string("Create Room"))
-          </button>
-
-          <h2>(ReasonReact.string("Available Rooms"))</h2>
-          <ul>
-            (
-              subtract(available, rooms)
-              |> Array.map(room =>
-                <li key=room>
-                  <a onClick=(_event => self.send(RoomEnter(room)))>(ReasonReact.string(room))</a>
-                </li>
+            <h3>(ReasonReact.string("Available Rooms"))</h3>
+            <ul>
+              (
+                subtract(available, rooms)
+                |> Array.map(room =>
+                  <li key=room>
+                    <a onClick=(_event => self.send(RoomEnter(room)))>(ReasonReact.string(room))</a>
+                  </li>
+                )
+                |> ReasonReact.array
               )
-              |> ReasonReact.array
-            )
-          </ul>
+            </ul>
 
-          <h2>(ReasonReact.string("Entered Rooms"))</h2>
-          <ul>
-            (
-              rooms
-              |> Array.map(room =>
-                <li key=room>
-                  (ReasonReact.string(room))
-                  <ul>
-                    (
-                      getMsg(room, messages)
-                      |> Array.mapi((i, msg: message) =>
-                        <li key=(string_of_int(i))>
-                          <b>(ReasonReact.string(msg.body))</b>
-                          <i>(ReasonReact.string(" by " ++ msg.avatar_id))</i>
-                        </li>
-                      )
-                      |> ReasonReact.array
+            <h3>(ReasonReact.string("Entered Rooms"))</h3>
+            <ul>
+              (
+                rooms
+                |> Array.map(room =>
+                  <li key=room>
+                    <a onClick=(_event => self.send(RoomSelect(room)))>(ReasonReact.string(room))</a>
+                  </li>
+                )
+                |> ReasonReact.array
+              )
+            </ul>
+          </div>
+          <div className="chat">
+            (switch (selected) {
+            | Some(room) =>
+              <>
+                <h2>(ReasonReact.string("#" ++ room))</h2>
+                <ul>
+                  (
+                    getMsg(room, messages)
+                    |> Array.mapi((i, msg: message) =>
+                      <li key=(string_of_int(i))>
+                        <b>(ReasonReact.string(msg.body))</b>
+                        <i>(ReasonReact.string(" by " ++ msg.avatar_id))</i>
+                      </li>
                     )
-                    <li>
-                      <input
-                        placeholder="What's up?"
-                        value=text
-                        onKeyDown=(
-                          event =>
-                            if (ReactEvent.Keyboard.keyCode(event) === 13) {
-                              ReactEvent.Keyboard.preventDefault(event);
-                              self.send(Send(room));
-                            }
-                        )
-                        onChange=(
-                          event =>
-                            self.send(UpdateText(ReactEvent.Form.target(event)##value))
-                        )
-                      />
-                    </li>
-                  </ul>
-                </li>
-              )
-              |> ReasonReact.array
-            )
-          </ul>
+                    |> ReasonReact.array
+                  )
+                  <li>
+                    <input
+                      placeholder="What's up?"
+                      value=text
+                      onKeyDown=(
+                        event =>
+                          if (ReactEvent.Keyboard.keyCode(event) === 13) {
+                            ReactEvent.Keyboard.preventDefault(event);
+                            self.send(Send);
+                          }
+                      )
+                      onChange=(
+                        event =>
+                          self.send(UpdateText(ReactEvent.Form.target(event)##value))
+                      )
+                    />
+                  </li>
+                </ul>
+              </>
+            | None => <p>(ReasonReact.string("Select or create a room"))</p>
+            })
+          </div>
+          <div className="avatars">
+          </div>
         </>
-      | _ => <h2>(ReasonReact.string("Connecting..."))</h2>
+      | _ => <div>(ReasonReact.string("Connecting..."))</div>
       })
     </div>;
   },
