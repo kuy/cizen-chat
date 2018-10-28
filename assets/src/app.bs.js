@@ -369,7 +369,7 @@ function make() {
                                       /* channel */match[/* channel */2],
                                       /* rooms */upsertRoom(room_id, "green", match[/* rooms */3]),
                                       /* available */uniqRooms(room_id, match[/* available */4]),
-                                      /* entered */match[/* entered */5],
+                                      /* entered */uniqRooms(room_id, match[/* entered */5]),
                                       /* messages */match[/* messages */6],
                                       /* text */match[/* text */7],
                                       /* selected */room_id

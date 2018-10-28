@@ -228,7 +228,7 @@ let make = _children => {
           channel,
           rooms: upsertRoom(room_id, "green", rooms),
           available: uniqRooms(room_id, available),
-          entered,
+          entered: uniqRooms(room_id, entered),
           messages,
           text,
           selected: Some(room_id)
