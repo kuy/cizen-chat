@@ -74,7 +74,7 @@ defmodule CizenChat.Automata.Avatar do
         IO.puts("Avatar[#{state.name}] <= Room.Create")
         room_id = perform id, %Start{saga: %Automata.Room{created_by: id}}
 
-        explain_event = perform id, %Request{
+        %{name: name, color: color} = perform id, %Request{
           body: %Room.SelfIntro{room_id: room_id}
         }
 
@@ -83,8 +83,8 @@ defmodule CizenChat.Automata.Avatar do
           body: %Room.Create.Done{
             create_id: event.id,
             room_id: room_id,
-            name: explain_event.body.name,
-            color: explain_event.body.color
+            name: name,
+            color: color
           }
         }
 
