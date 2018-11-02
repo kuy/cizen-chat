@@ -2,7 +2,7 @@ alias Cizen.Effects.{Receive, Request, Subscribe, Start, Dispatch}
 alias Cizen.EventFilter
 alias CizenChat.Automata
 alias CizenChat.Events
-alias CizenChat.Events.Room
+alias CizenChat.Events.{Transport, Room}
 
 defmodule CizenChat.Automata.Avatar do
   use Cizen.Automaton
@@ -48,6 +48,13 @@ defmodule CizenChat.Automata.Avatar do
         event_body_filters: [
           %Events.DestFilter{value: id}
         ]
+      )
+    }
+
+    # Setting from Room
+    perform id, %Subscribe{
+      event_filter: EventFilter.new(
+        event_type: Room.Setting
       )
     }
 
@@ -113,6 +120,24 @@ defmodule CizenChat.Automata.Avatar do
             text: text
           }
         }
+        state
+      %Room.Setting{source: source, room_id: room_id, name: name, color: color} ->
+        if source != id do
+          IO.puts("Avatar[#{state.name}] <= Room.Setting: name=#{name}, color=#{color}")
+          perform id, %Dispatch{
+            body: %Transport{
+              source: source,
+              dest: id,
+              direction: :outgoing,
+              body: %Room.Setting{
+                source: source,
+                room_id: room_id,
+                name: name,
+                color: color
+              }
+            }
+          }
+        end
         state
     end
   end

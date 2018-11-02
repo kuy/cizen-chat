@@ -73,25 +73,14 @@ defmodule CizenChat.Automata.Room do
         case body do
           %Room.Setting{source: source, room_id: room_id, name: name, color: color} ->
             IO.puts("Room[#{state.name}] <= Transport(Room.Setting)")
-
-            # Broadcast event to room members except source
-            state.members
-            |> Enum.filter(fn avatar_id -> avatar_id != source end)
-            |> Enum.each(fn avatar_id ->
-              perform id, %Dispatch{
-                body: %Transport{
-                  source: source,
-                  dest: avatar_id,
-                  direction: :outgoing,
-                  body: %Room.Setting{
-                    source: source,
-                    room_id: room_id,
-                    name: name,
-                    color: color
-                  }
-                }
+            perform id, %Dispatch{
+              body: %Room.Setting{
+                source: source,
+                room_id: room_id,
+                name: name,
+                color: color
               }
-            end)
+            }
             state
             |> put_in([:name], name)
             |> put_in([:color], color)
