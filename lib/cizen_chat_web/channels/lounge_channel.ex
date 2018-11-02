@@ -52,9 +52,9 @@ defmodule CizenChatWeb.Gateway do
     case event.body do
       %Transport{source: _source, dest: _dest, direction: _direction, body: body} ->
         case body do
-          %Room.Setting{source: _source, room_id: room_id, color: color} ->
+          %Room.Setting{source: _source, room_id: room_id, name: name, color: color} ->
             IO.puts("Gateway[#{state.avatar_id}] <= Transport(Room.Setting): room=#{room_id}")
-            Channel.push state.socket, "room:setting", %{room_id: room_id, color: color}
+            Channel.push state.socket, "room:setting", %{room_id: room_id, name: name, color: color}
         end
       %Room.Message.Transport{source: source, dest: _dest, direction: _direction, room_id: room_id, text: text} ->
         IO.puts("Gateway[#{state.avatar_id}] <= Room.Message.Transport: '#{text}' from #{source} at #{room_id}")
@@ -95,13 +95,13 @@ defmodule CizenChatWeb.LoungeChannel do
 
   def handle_in("room:create", %{"source" => source}, socket) do
     IO.puts("Channel#room:create: by #{source}")
-    room_id = handle fn id ->
+    body = handle fn id ->
       done_event = perform id, %Request{
         body: %Room.Create{source: source}
       }
-      done_event.body.room_id
+      done_event.body
     end
-    {:reply, {:ok, %{room_id: room_id}}, socket}
+    {:reply, {:ok, body}, socket}
   end
 
   def handle_in("room:enter", %{"source" => source, "room_id" => room_id}, socket) do
@@ -130,8 +130,8 @@ defmodule CizenChatWeb.LoungeChannel do
     {:reply, :ok, socket}
   end
 
-  def handle_in("room:setting", %{"source" => source, "room_id" => room_id, "color" => color}, socket) do
-    IO.puts("Channel#room:setting: to=#{room_id}, color=#{color}, by=#{source}")
+  def handle_in("room:setting", %{"source" => source, "room_id" => room_id, "name" => name, "color" => color}, socket) do
+    IO.puts("Channel#room:setting: to=#{room_id}, name=#{name}, color=#{color}, by=#{source}")
     handle fn id ->
       perform id, %Dispatch{
         body: %Transport{
@@ -141,6 +141,7 @@ defmodule CizenChatWeb.LoungeChannel do
           body: %Room.Setting{
             source: source,
             room_id: room_id,
+            name: name,
             color: color
           }
         }

@@ -1,4 +1,4 @@
-alias Cizen.Effects.{Receive, Subscribe, Start, Dispatch}
+alias Cizen.Effects.{Receive, Request, Subscribe, Start, Dispatch}
 alias Cizen.EventFilter
 alias CizenChat.Automata
 alias CizenChat.Events
@@ -67,11 +67,17 @@ defmodule CizenChat.Automata.Avatar do
         IO.puts("Avatar[#{state.name}] <= Room.Create")
         room_id = perform id, %Start{saga: %Automata.Room{created_by: id}}
 
+        explain_event = perform id, %Request{
+          body: %Room.SelfIntro{room_id: room_id}
+        }
+
         IO.puts("Avatar[#{state.name}] => Room.Create.Done: room_id=#{room_id}")
         perform id, %Dispatch{
           body: %Room.Create.Done{
             create_id: event.id,
-            room_id: room_id
+            room_id: room_id,
+            name: explain_event.body.name,
+            color: explain_event.body.color
           }
         }
 

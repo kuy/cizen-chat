@@ -5,7 +5,7 @@ defmodule CizenChat.Events.Room.Create do
 
   use Cizen.Request
   defresponse Done, :create_id do
-    defstruct [:create_id, :room_id]
+    defstruct [:create_id, :room_id, :name, :color]
   end
 end
 
@@ -22,11 +22,20 @@ defmodule CizenChat.Events.Room.Leave do
 end
 
 defmodule CizenChat.Events.Room.Setting do
-  defstruct [:source, :room_id, :color]
+  defstruct [:source, :room_id, :name, :color]
 end
 
 defmodule CizenChat.Events.Room.Advertise do
   defstruct [:joiner_id]
+end
+
+defmodule CizenChat.Events.Room.SelfIntro do
+  defstruct [:room_id]
+
+  use Cizen.Request
+  defresponse Explain, :self_intro_id do
+    defstruct [:self_intro_id, :name, :color]
+  end
 end
 
 defmodule CizenChat.Events.Room.Message do
@@ -49,7 +58,7 @@ defmodule CizenChat.Events.Transport do
       case wrapper do
         %CizenChat.Events.Transport{source: _source, dest: _dest, direction: _direction, body: body} ->
           case body do
-            %CizenChat.Events.Room.Setting{source: _source, room_id: room_id, color: _color} ->
+            %CizenChat.Events.Room.Setting{source: _source, room_id: room_id, name: _name, color: _color} ->
               value == room_id
             _ -> false
           end

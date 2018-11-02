@@ -1,71 +1,5 @@
 open Phx;
-
-/* type: message */
-
-module MsgMap = Map.Make({
-  type t = string;
-  let compare = compare;
-});
-
-type message = {
-  body: string,
-  avatar_id: string
-};
-type messages = array(message);
-type messages_by_room_id = MsgMap.t(messages);
-
-let addMsg = (avatar_id, room, body, map) => {
-  let msg = { body, avatar_id };
-  if (MsgMap.mem(room, map)) {
-    let messages = MsgMap.find(room, map);
-    MsgMap.add(room, Array.concat([messages, [|msg|]]), map);
-  } else {
-    MsgMap.add(room, [|msg|], map);
-  };
-};
-
-let getMsg = (room, map) =>
-  try(MsgMap.find(room, map)) {
-  | Not_found => [||]
-  };
-
-/* type: room */
-
-module RoomMap = Map.Make({
-  type t = string;
-  let compare = compare;
-});
-
-type room = {
-  id: string,
-  color: string
-};
-type room_by_room_id = RoomMap.t(room);
-
-let uniqRooms = (room_id, rooms) => {
-  let rooms_l = Array.to_list(rooms);
-  if (List.mem(room_id, rooms_l)) {
-    rooms;
-  } else {
-    Array.concat([rooms, [|room_id|]]);
-  };
-};
-
-let upsertRoom = (room_id, color, rooms) => {
-  let room = { id: room_id, color };
-  RoomMap.add(room_id, room, rooms);
-};
-
-let roomClassName = (room_id_opt, rooms) => {
-  let color = switch (room_id_opt) {
-  | Some(room_id) =>
-    try(RoomMap.find(room_id, rooms).color) {
-    | Not_found => "green"
-    }
-  | None => "green"
-  };
-  "p-rooms p-rooms--" ++ color;
-};
+open MessageMap;
 
 let subtract = (a1, a2) => {
   let l2 = Array.to_list(a2);
@@ -78,10 +12,10 @@ type ready_state = {
   id: string,
   socket: Socket.t,
   channel: Channel.t,
-  rooms: room_by_room_id,
+  rooms: Room.by_room_id,
   available: array(string), /* redundant? */
   entered: array(string),
-  messages: messages_by_room_id,
+  messages: Messages.by_room_id_t,
   text: string,
   selected: option(string)
 };
@@ -95,46 +29,16 @@ type action =
   | Connect
   | Connected(string, Socket.t, Channel.t)
   | RoomCreate
-  | RoomCreated(string)
+  | RoomCreated(string, string, string)
   | RoomEnter(string)
   | RoomSelect(string)
-  | ReceiveRoomSetting(string, string)
-  | SendRoomSetting(string)
+  | ReceiveRoomSetting(string, string, string)
+  | SendRoomSetting(option(string), option(string))
   | Send
   | Receive(string, string, string)
   | UpdateText(string);
 
 let component = ReasonReact.reducerComponent("App");
-
-type res_welcome = { id: string };
-type res_created = { room_id: string };
-type msg_message = { source: string, room_id: string, body: string };
-type msg_setting = { room_id: string, color: string };
-
-module Decode = {
-  let welcome = json =>
-    Json.Decode.{
-      id: json |> field("id", string)
-    };
-
-  let created = json =>
-    Json.Decode.{
-      room_id: json |> field("room_id", string)
-    };
-
-  let receive = json =>
-    Json.Decode.{
-      source: json |> field("source", string),
-      room_id: json |> field("room_id", string),
-      body: json |> field("body", string)
-    };
-
-  let setting = json =>
-    Json.Decode.{
-      room_id: json |> field("room_id", string),
-      color: json |> field("color", string)
-    };
-};
 
 let make = _children => {
   ...component,
@@ -153,16 +57,16 @@ let make = _children => {
         let _ =
           channel
           |> putOn("room:message", (res: Abstract.any) => {
-            let { source, room_id, body } = Decode.receive(res);
+            let { source, room_id, body }: Decode.message = Decode.receive(res);
             self.send(Receive(source, room_id, body));
           })
           |> putOn("room:setting", (res: Abstract.any) => {
-            let { room_id, color } = Decode.setting(res);
-            self.send(ReceiveRoomSetting(room_id, color));
+            let { room_id, name, color }: Decode.setting = Decode.setting(res);
+            self.send(ReceiveRoomSetting(room_id, name, color));
           })
           |> joinChannel
           |> putReceive("ok", (res: Abstract.any) => {
-            let welcome = Decode.welcome(res);
+            let welcome: Decode.welcome = Decode.welcome(res);
             self.send(Connected(welcome.id, socket, channel));
           });
       })
@@ -171,10 +75,10 @@ let make = _children => {
         id,
         socket,
         channel,
-        rooms: RoomMap.empty,
+        rooms: Room.RoomMap.empty,
         available: [||],
         entered: [||],
-        messages: MsgMap.empty,
+        messages: MessageMap.empty,
         text: "",
         selected: None
       }))
@@ -196,7 +100,7 @@ let make = _children => {
       | Ready({ messages } as state) =>
         ReasonReact.Update(Ready({
           ...state,
-          messages: addMsg(source, room_id, body, messages)
+          messages: Message.addMsg(source, room_id, body, messages)
         }))
       | _ => ReasonReact.NoUpdate
       }
@@ -205,21 +109,21 @@ let make = _children => {
       | Ready({ id, channel }) =>
         push("room:create", {"source": id}, channel)
           |> putReceive("ok", (res: Abstract.any) => {
-            let room_id = Decode.created(res).room_id;
-            self.send(RoomCreated(room_id));
+            let { room_id, name, color }: Decode.setting = Decode.setting(res);
+            self.send(RoomCreated(room_id, name, color));
           })
           |> ignore;
         ();
       | _ => ()
       }})
-    | RoomCreated(room_id) =>
+    | RoomCreated(room_id, name, color) =>
       switch (state) {
       | Ready({ rooms, available, entered } as state) =>
         ReasonReact.Update(Ready({
           ...state,
-          rooms: upsertRoom(room_id, "green", rooms),
-          available: uniqRooms(room_id, available),
-          entered: uniqRooms(room_id, entered),
+          rooms: Room.upsertRoom(room_id, name, color, rooms),
+          available: Room.uniqRooms(room_id, available),
+          entered: Room.uniqRooms(room_id, entered),
           selected: Some(room_id)
         }))
       | _ => ReasonReact.NoUpdate
@@ -227,10 +131,10 @@ let make = _children => {
     | RoomEnter(room_id) =>
       switch (state) {
       | Ready({ id, channel, entered } as state) =>
-        push("room:enter", {"source": id, "room_id": room_id}, channel);
+        push("room:enter", {"source": id, "room_id": room_id}, channel) |> ignore;
         ReasonReact.Update(Ready({
           ...state,
-          entered: uniqRooms(room_id, entered),
+          entered: Room.uniqRooms(room_id, entered),
           selected: Some(room_id)
         }))
       | _ => ReasonReact.NoUpdate
@@ -244,24 +148,32 @@ let make = _children => {
         }))
       | _ => ReasonReact.NoUpdate
       }
-    | ReceiveRoomSetting(room_id, color) =>
+    | ReceiveRoomSetting(room_id, name, color) =>
       switch (state) {
       | Ready({ rooms, available } as state) =>
         ReasonReact.Update(Ready({
           ...state,
-          rooms: upsertRoom(room_id, color, rooms),
-          available: uniqRooms(room_id, available)
+          rooms: Room.upsertRoom(room_id, name, color, rooms),
+          available: Room.uniqRooms(room_id, available)
         }))
       | _ => ReasonReact.NoUpdate
       }
-    | SendRoomSetting(color) => ReasonReact.SideEffects(self => {
+    | SendRoomSetting(name_opt, color_opt) => ReasonReact.SideEffects(self => {
       switch (self.state) {
-      | Ready({ id, channel, selected }) =>
+      | Ready({ id, channel, rooms, selected }) =>
         switch (selected) {
         | Some(room) =>
-          push("room:setting", {"source": id, "room_id": room, "color": color}, channel) |> ignore;
+          let name = switch (name_opt) {
+          | Some(name) => name
+          | None => Room.getRoomName(room, rooms)
+          };
+          let color = switch (color_opt) {
+          | Some(color) => color
+          | None => Room.getRoomColor(room, rooms)
+          };
+          push("room:setting", {"source": id, "room_id": room, "name": name, "color": color}, channel) |> ignore;
           /* Loopback. Update self state */
-          self.send(ReceiveRoomSetting(room, color));
+          self.send(ReceiveRoomSetting(room, name, color));
         | None => ()
         }
       | _ => ()
@@ -281,40 +193,26 @@ let make = _children => {
       (switch (self.state) {
       | Ready({ id, rooms, available, entered, messages, text, selected }) =>
         <>
-          <div className=(roomClassName(selected, rooms))>
+          <div className=(Room.roomClassName(selected, rooms))>
             <header className="c-header">{ReasonReact.string("CizenChat")}</header>
             <div className="p-side-content">
               <div className="c-user">(ReasonReact.string("#" ++ id))</div>
 
-              <button className="c-button" onClick=(_event => self.send(RoomCreate))>
+              <button className="c-button" onClick=(_event => RoomCreate |> self.send)>
                 (ReasonReact.string("Create Room"))
               </button>
 
-              <div className="c-list">
-                <div className="c-list-header">(ReasonReact.string("Available Rooms"))</div>
-                <div className="c-list-body">
-                  (
-                    subtract(available, entered)
-                    |> Array.map(room =>
-                      <div className="c-list-item" key=room onClick=(_event => self.send(RoomEnter(room)))>(ReasonReact.string(room))</div>
-                    )
-                    |> ReasonReact.array
-                  )
-                </div>
-              </div>
+              <RoomList
+                title="Available Rooms"
+                rooms=(Room.byIds(subtract(available, entered), rooms))
+                handleSelect=(room => RoomEnter(room) |> self.send)
+              />
 
-              <div className="c-list">
-                <div className="c-list-header">(ReasonReact.string("Joined Rooms"))</div>
-                <div className="c-list-body">
-                  (
-                    entered
-                    |> Array.map(room =>
-                      <div className="c-list-item" key=room onClick=(_event => self.send(RoomSelect(room)))>(ReasonReact.string(room))</div>
-                    )
-                    |> ReasonReact.array
-                  )
-                </div>
-              </div>
+              <RoomList
+                title="Joined Rooms"
+                rooms=(Room.byIds(entered, rooms))
+                handleSelect=(room => RoomSelect(room) |> self.send)
+              />
             </div>
           </div>
           <div className="p-chat">
@@ -323,25 +221,15 @@ let make = _children => {
               | Some(room) =>
                 <>
                   <div className="c-chat-header">
-                    <span>(ReasonReact.string("Room #" ++ room))</span>
-                    <div className="c-colors">
-                      <div onClick=(_event => self.send(SendRoomSetting("red"))) className="c-colors-item c-colors-item--red"></div>
-                      <div onClick=(_event => self.send(SendRoomSetting("green"))) className="c-colors-item c-colors-item--green"></div>
-                      <div onClick=(_event => self.send(SendRoomSetting("blue"))) className="c-colors-item c-colors-item--blue"></div>
-                    </div>
+                    <RoomTitle
+                      name=(Room.getRoomName(room, rooms))
+                      handleChange=(name => SendRoomSetting(Some(name), None) |> self.send)
+                    />
+                    <ThemeChanger
+                      handleChange=(color => SendRoomSetting(None, Some(color)) |> self.send)
+                    />
                   </div>
-                  <div>
-                    (
-                      getMsg(room, messages)
-                      |> Array.mapi((i, msg: message) =>
-                        <div className="c-message" key=(string_of_int(i))>
-                          <b>(ReasonReact.string(msg.body))</b>
-                          <i>(ReasonReact.string(" by " ++ msg.avatar_id))</i>
-                        </div>
-                      )
-                      |> ReasonReact.array
-                    )
-                  </div>
+                  <MessageList messages=(Message.getMsg(room, messages)) />
                 </>
               | None => <p>(ReasonReact.string("Select or create a room"))</p>
               })
