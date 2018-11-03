@@ -42,11 +42,7 @@ defmodule CizenChat.Events.Room.Message do
   defstruct [:source, :dest, :room_id, :text]
 end
 
-defmodule CizenChat.Events.Room.Message.Transport do
-  defstruct [:source, :dest, :direction, :room_id, :text]
-end
-
-# Transport: An event for internal communication. Cizen Automata <=> Phoenix Channel.
+# Transport: A wrapper event for inter-subsystem communication. Cizen Automata <=> Phoenix Channel.
 
 defmodule CizenChat.Events.Transport do
   defstruct [:source, :dest, :direction, :body]

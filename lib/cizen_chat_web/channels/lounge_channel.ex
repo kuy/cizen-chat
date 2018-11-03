@@ -18,15 +18,7 @@ defmodule CizenChatWeb.Gateway do
       )
     }
 
-    perform id, %Subscribe{
-      event_filter: Filter.new(
-        fn %Event{body: %Room.Message.Transport{dest: dest_id, direction: dir}} ->
-          dest_id == avatar_id and dir == :outgoing
-        end
-      )
-    }
-
-    # FIXME: Advertising should be requested from Cizen, not the external layer
+    # FIXME: Advertising should be requested from Cizen, not from the external layer
     perform id, %Dispatch{
       body: %Room.Advertise{
         joiner_id: avatar_id
@@ -46,13 +38,13 @@ defmodule CizenChatWeb.Gateway do
     case event.body do
       %Transport{source: _source, dest: _dest, direction: _direction, body: body} ->
         case body do
+          %Room.Message{source: source, dest: _dest, room_id: room_id, text: text} ->
+            IO.puts("Gateway[#{state.avatar_id}] <= Transport(Room.Message): room=#{room_id}")
+            Channel.push state.socket, "room:message", %{source: source, room_id: room_id, body: text}
           %Room.Setting{source: _source, room_id: room_id, name: name, color: color} ->
             IO.puts("Gateway[#{state.avatar_id}] <= Transport(Room.Setting): room=#{room_id}")
             Channel.push state.socket, "room:setting", %{room_id: room_id, name: name, color: color}
         end
-      %Room.Message.Transport{source: source, dest: _dest, direction: _direction, room_id: room_id, text: text} ->
-        IO.puts("Gateway[#{state.avatar_id}] <= Room.Message.Transport: '#{text}' from #{source} at #{room_id}")
-        Channel.push state.socket, "room:message", %{source: source, room_id: room_id, body: text}
     end
     state
   end
@@ -112,12 +104,16 @@ defmodule CizenChatWeb.LoungeChannel do
     IO.puts("Channel#room:message: #{body} from #{source} at #{room_id}")
     handle fn id ->
       perform id, %Dispatch{
-        body: %Room.Message.Transport{
-          source: source,
+        body: %Transport{
+          source: id, # Gateway's saga id
           dest: source,
           direction: :incoming,
-          room_id: room_id,
-          text: body
+          body: %Room.Message{
+            source: source,
+            dest: "*",
+            room_id: room_id,
+            text: body
+          }
         }
       }
     end

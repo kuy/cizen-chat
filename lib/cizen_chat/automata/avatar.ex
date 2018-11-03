@@ -26,11 +26,11 @@ defmodule CizenChat.Automata.Avatar do
       )
     }
 
-    # Transport Message from Phoenix Channel
+    # Transport from Phoenix Channel
     perform id, %Subscribe{
       event_filter: Filter.new(
-        fn %Event{body: %Room.Message.Transport{source: source_id, dest: dest_id, direction: dir}} ->
-          source_id == id and dest_id == id and dir == :incoming
+        fn %Event{body: %Transport{dest: dest, direction: dir, body: %Room.Message{source: source}}} ->
+          source == id and dest == id and dir == :incoming
         end
       )
     }
@@ -60,7 +60,6 @@ defmodule CizenChat.Automata.Avatar do
 
   @impl true
   def yield(id, state) do
-    # IO.puts("Avatar: name=#{state.name}")
     event = perform id, %Receive{}
     case event.body do
       %Room.Create{source: _source} ->
@@ -91,26 +90,31 @@ defmodule CizenChat.Automata.Avatar do
           name: state.name,
           rooms: [room_id | state.rooms]
         }
-      %Room.Message.Transport{source: source, dest: _dest, direction: _direction, room_id: room_id, text: text} ->
-        IO.puts("Avatar[#{state.name}] <= Room.Message.Transport: '#{text}' at #{room_id}")
-        perform id, %Dispatch{
-          body: %Room.Message{
-            source: source,
-            dest: "*",
-            room_id: room_id,
-            text: text
-          }
-        }
-        state
+
+      # Phoenix Channel -> Gateway -> Avatar(me) -> Room
+      %Transport{source: _source, dest: _dest, direction: _direction, body: body} ->
+        case body do
+          %Room.Message{source: _source, dest: _dest, room_id: room_id, text: text} ->
+            IO.puts("Avatar[#{state.name}] <= Transport(Room.Message): '#{text}' by me at #{room_id}")
+            perform id, %Dispatch{body: body}
+            state
+          _ -> state
+        end
+
+      # Room -> Avatar(me) -> Gateway -> Phoenix Channel
       %Room.Message{source: source, dest: dest, room_id: room_id, text: text} ->
         IO.puts("Avatar[#{state.name}] <= Room.Message: '#{text}' by #{source} at #{room_id}")
         perform id, %Dispatch{
-          body: %Room.Message.Transport{
+          body: %Transport{
             source: source,
             dest: dest,
             direction: :outgoing,
-            room_id: room_id,
-            text: text
+            body: %Room.Message{
+              source: source,
+              dest: dest,
+              room_id: room_id,
+              text: text
+            }
           }
         }
         state
