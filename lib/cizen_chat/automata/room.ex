@@ -50,9 +50,21 @@ defmodule CizenChat.Automata.Room do
       )
     }
 
+    # Advertise other avatars
+    name = id |> String.split("-") |> List.first
+    color = :green
+    perform id, %Dispatch{
+      body: %Room.Setting{
+        source: created_by,
+        room_id: id,
+        name: name,
+        color: color
+      }
+    }
+
     %{
-      name: id |> String.split("-") |> List.first,
-      color: :green,         # theme color of this room
+      name: name,
+      color: color,          # theme color of this room
       members: [created_by], # list of avatar ids
       created_by: created_by # creator of this room
     }
