@@ -36,6 +36,11 @@ function make(handleChange, _children) {
                               onClick: (function (_event) {
                                   return Curry._1(handleChange, "blue");
                                 })
+                            }), React.createElement("div", {
+                              className: "c-colors-item c-colors-item--yellow",
+                              onClick: (function (_event) {
+                                  return Curry._1(handleChange, "yellow");
+                                })
                             }));
             }),
           /* initialState */component[/* initialState */10],

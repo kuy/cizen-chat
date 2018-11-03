@@ -40,12 +40,22 @@ body {
   filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#51db62', endColorstr='#43d897',GradientType=0 );
 }
 
+/* http://www.colorzilla.com/gradient-editor/#3d95e2+0,6951d6+100 */
 .p-rooms--blue {
   background: rgb(61,149,226);
   background: -moz-linear-gradient(top, rgb(61,149,226) 0%, rgb(105,81,214) 100%);
   background: -webkit-linear-gradient(top, rgb(61,149,226) 0%,rgb(105,81,214) 100%);
   background: linear-gradient(to bottom, rgb(61,149,226) 0%,rgb(105,81,214) 100%);
   filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#3d95e2', endColorstr='#6951d6',GradientType=0 );
+}
+
+/* http://www.colorzilla.com/gradient-editor/#e2e241+0,d1b24f+100 */
+.p-rooms--yellow {
+  background: rgb(226,226,65);
+  background: -moz-linear-gradient(top, rgb(226,226,65) 0%, rgb(209,178,79) 100%);
+  background: -webkit-linear-gradient(top, rgb(226,226,65) 0%,rgb(209,178,79) 100%);
+  background: linear-gradient(to bottom, rgb(226,226,65) 0%,rgb(209,178,79) 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#e2e241', endColorstr='#d1b24f',GradientType=0 );
 }
 
 .p-chat {
@@ -174,6 +184,10 @@ body {
 
 .c-colors-item--blue {
   background-color: rgb(61,149,226);
+}
+
+.c-colors-item--yellow {
+  background-color: rgb(226,226,65);
 }
 
 .c-message {
