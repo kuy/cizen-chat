@@ -1,5 +1,5 @@
 alias Cizen.Effects.{Start, Receive, Subscribe, Dispatch}
-alias Cizen.EventFilter
+alias Cizen.{Event, Filter}
 alias CizenChat.Events.{Lounge, Room}
 alias CizenChat.Automata
 
@@ -11,14 +11,14 @@ defmodule CizenChat.Automata.Lounge do
   @impl true
   def spawn(id, _) do
     perform id, %Subscribe{
-      event_filter: EventFilter.new(
-        event_type: Lounge.Join
+      event_filter: Filter.new(
+        fn %Event{body: %Lounge.Join{}} -> true end
       )
     }
 
     perform id, %Subscribe{
-      event_filter: EventFilter.new(
-        event_type: Room.Create.Done
+      event_filter: Filter.new(
+        fn %Event{body: %Room.Create.Done{}} -> true end
       )
     }
 

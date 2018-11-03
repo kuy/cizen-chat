@@ -1,34 +1,28 @@
 alias Cizen.Effects.{Subscribe, Dispatch, Request, Receive, Start}
-alias CizenChat.Events
+alias Cizen.{Event, Filter}
 alias CizenChat.Events.{Transport, Lounge, Room}
 
 defmodule CizenChatWeb.Gateway do
   alias Phoenix.Channel
   use Cizen.Automaton
 
-  alias Cizen.EventFilter
-
   defstruct [:socket, :avatar_id]
 
   @impl true
   def spawn(id, %__MODULE__{socket: socket, avatar_id: avatar_id}) do
     perform id, %Subscribe{
-      event_filter: EventFilter.new(
-        event_type: Transport,
-        event_body_filters: [
-          %Events.DestFilter{value: avatar_id},
-          %Events.DirectionFilter{value: :outgoing}
-        ]
+      event_filter: Filter.new(
+        fn %Event{body: %Transport{dest: dest_id, direction: dir}} ->
+          dest_id == avatar_id and dir == :outgoing
+        end
       )
     }
 
     perform id, %Subscribe{
-      event_filter: EventFilter.new(
-        event_type: Room.Message.Transport,
-        event_body_filters: [
-          %Events.DestFilter{value: avatar_id},
-          %Events.DirectionFilter{value: :outgoing}
-        ]
+      event_filter: Filter.new(
+        fn %Event{body: %Room.Message.Transport{dest: dest_id, direction: dir}} ->
+          dest_id == avatar_id and dir == :outgoing
+        end
       )
     }
 

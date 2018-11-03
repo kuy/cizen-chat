@@ -1,6 +1,5 @@
 alias Cizen.Effects.{Receive, Subscribe, Dispatch}
-alias Cizen.EventFilter
-alias CizenChat.Events
+alias Cizen.{Event, Filter}
 alias CizenChat.Events.{Transport, Room}
 
 defmodule CizenChat.Automata.Room do
@@ -13,46 +12,41 @@ defmodule CizenChat.Automata.Room do
     IO.puts("Room: created by #{created_by}")
 
     perform id, %Subscribe{
-      event_filter: EventFilter.new(
-        event_type: Transport,
-        event_body_filters: [
-          %Events.DirectionFilter{value: :incoming},
-          %Transport.RoomIDFilter{value: id}
-        ]
+      event_filter: Filter.new(
+        fn %Event{body: %Transport{direction: dir, body: %Room.Setting{room_id: room_id}}} ->
+          dir == :incoming and room_id == id
+        end
       )
     }
 
     perform id, %Subscribe{
-      event_filter: EventFilter.new(
-        event_type: Room.Enter,
-        event_body_filters: [
-          %Events.RoomIDFilter{value: id}
-        ]
+      event_filter: Filter.new(
+        fn %Event{body: %Room.Enter{room_id: room_id}} ->
+          room_id == id
+        end
       )
     }
 
     perform id, %Subscribe{
-      event_filter: EventFilter.new(
-        event_type: Room.Message,
-        event_body_filters: [
-          %Events.DestFilter{value: "*"},
-          %Events.RoomIDFilter{value: id}
-        ]
+      event_filter: Filter.new(
+        fn %Event{body: %Room.Message{dest: dest_id, room_id: room_id}} ->
+          # FIXME: "*" is ugly workaround
+          dest_id == "*" and room_id == id
+        end
       )
     }
 
     perform id, %Subscribe{
-      event_filter: EventFilter.new(
-        event_type: Room.Advertise
+      event_filter: Filter.new(
+        fn %Event{body: %Room.Advertise{}} -> true end
       )
     }
 
     perform id, %Subscribe{
-      event_filter: EventFilter.new(
-        event_type: Room.SelfIntro,
-        event_body_filters: [
-          %Events.RoomIDFilter{value: id}
-        ]
+      event_filter: Filter.new(
+        fn %Event{body: %Room.SelfIntro{room_id: room_id}} ->
+          room_id == id
+        end
       )
     }
 
@@ -66,7 +60,6 @@ defmodule CizenChat.Automata.Room do
 
   @impl true
   def yield(id, state) do
-    IO.puts("Room[#{state.name}]: members=#{Enum.join(state.members, ", ")}")
     event = perform id, %Receive{}
     case event.body do
       %Transport{source: _source, dest: _dest, direction: _direction, body: body} ->

@@ -50,22 +50,6 @@ end
 
 defmodule CizenChat.Events.Transport do
   defstruct [:source, :dest, :direction, :body]
-
-  import Cizen.EventBodyFilter
-  defeventbodyfilter RoomIDFilter, :room_id do
-    @impl true
-    def test(%{value: value}, wrapper) do
-      case wrapper do
-        %CizenChat.Events.Transport{source: _source, dest: _dest, direction: _direction, body: body} ->
-          case body do
-            %CizenChat.Events.Room.Setting{source: _source, room_id: room_id, name: _name, color: _color} ->
-              value == room_id
-            _ -> false
-          end
-        _ -> false
-      end
-    end
-  end
 end
 
 # Lounge
@@ -77,14 +61,4 @@ defmodule CizenChat.Events.Lounge.Join do
   defresponse Welcome, :join_id do
     defstruct [:join_id, :avatar_id, :rooms]
   end
-end
-
-# Filters
-
-defmodule CizenChat.Events do
-  import Cizen.EventBodyFilter
-  defeventbodyfilter SourceFilter, :source
-  defeventbodyfilter DestFilter, :dest
-  defeventbodyfilter RoomIDFilter, :room_id
-  defeventbodyfilter DirectionFilter, :direction
 end

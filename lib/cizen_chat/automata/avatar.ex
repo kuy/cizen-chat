@@ -1,7 +1,6 @@
 alias Cizen.Effects.{Receive, Request, Subscribe, Start, Dispatch}
-alias Cizen.EventFilter
+alias Cizen.{Event, Filter}
 alias CizenChat.Automata
-alias CizenChat.Events
 alias CizenChat.Events.{Transport, Room}
 
 defmodule CizenChat.Automata.Avatar do
@@ -12,49 +11,43 @@ defmodule CizenChat.Automata.Avatar do
   @impl true
   def spawn(id, _) do
     perform id, %Subscribe{
-      event_filter: EventFilter.new(
-        event_type: Room.Create,
-        event_body_filters: [
-          %Events.SourceFilter{value: id}
-        ]
+      event_filter: Filter.new(
+        fn %Event{body: %Room.Create{source: source_id}} ->
+          source_id == id
+        end
       )
     }
 
     perform id, %Subscribe{
-      event_filter: EventFilter.new(
-        event_type: Room.Enter,
-        event_body_filters: [
-          %Events.SourceFilter{value: id}
-        ]
+      event_filter: Filter.new(
+        fn %Event{body: %Room.Enter{source: source_id}} ->
+          source_id == id
+        end
       )
     }
 
     # Transport Message from Phoenix Channel
     perform id, %Subscribe{
-      event_filter: EventFilter.new(
-        event_type: Room.Message.Transport,
-        event_body_filters: [
-          %Events.SourceFilter{value: id},
-          %Events.DestFilter{value: id},
-          %Events.DirectionFilter{value: :incoming}
-        ]
+      event_filter: Filter.new(
+        fn %Event{body: %Room.Message.Transport{source: source_id, dest: dest_id, direction: dir}} ->
+          source_id == id and dest_id == id and dir == :incoming
+        end
       )
     }
 
     # Message from Room
     perform id, %Subscribe{
-      event_filter: EventFilter.new(
-        event_type: Room.Message,
-        event_body_filters: [
-          %Events.DestFilter{value: id}
-        ]
+      event_filter: Filter.new(
+        fn %Event{body: %Room.Message{dest: dest_id}} ->
+          dest_id == id
+        end
       )
     }
 
     # Setting from Room
     perform id, %Subscribe{
-      event_filter: EventFilter.new(
-        event_type: Room.Setting
+      event_filter: Filter.new(
+        fn %Event{body: %Room.Setting{}} -> true end
       )
     }
 
@@ -74,7 +67,7 @@ defmodule CizenChat.Automata.Avatar do
         IO.puts("Avatar[#{state.name}] <= Room.Create")
         room_id = perform id, %Start{saga: %Automata.Room{created_by: id}}
 
-        %{name: name, color: color} = perform id, %Request{
+        %{body: %{name: name, color: color}} = perform id, %Request{
           body: %Room.SelfIntro{room_id: room_id}
         }
 
