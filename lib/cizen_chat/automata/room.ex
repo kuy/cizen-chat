@@ -74,7 +74,7 @@ defmodule CizenChat.Automata.Room do
   def yield(id, state) do
     event = perform id, %Receive{}
     case event.body do
-      %Transport{source: _source, dest: _dest, direction: _direction, body: body} ->
+      %Transport{dest: _dest, direction: _direction, body: body} ->
         case body do
           %Room.Setting{source: source, room_id: room_id, name: name, color: color} ->
             IO.puts("Room[#{state.name}] <= Transport(Room.Setting)")
@@ -95,7 +95,6 @@ defmodule CizenChat.Automata.Room do
         IO.puts("Room[#{state.name}] <= Room.Advertise: joiner=#{joiner_id}")
         perform id, %Dispatch{
           body: %Transport{
-            source: joiner_id,
             dest: joiner_id,
             direction: :outgoing,
             body: %Room.Setting{

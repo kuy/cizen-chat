@@ -92,7 +92,7 @@ defmodule CizenChat.Automata.Avatar do
         }
 
       # Phoenix Channel -> Gateway -> Avatar(me) -> Room
-      %Transport{source: _source, dest: _dest, direction: _direction, body: body} ->
+      %Transport{dest: _dest, direction: _direction, body: body} ->
         case body do
           %Room.Message{source: _source, dest: _dest, room_id: room_id, text: text} ->
             IO.puts("Avatar[#{state.name}] <= Transport(Room.Message): '#{text}' by me at #{room_id}")
@@ -106,8 +106,7 @@ defmodule CizenChat.Automata.Avatar do
         IO.puts("Avatar[#{state.name}] <= Room.Message: '#{text}' by #{source} at #{room_id}")
         perform id, %Dispatch{
           body: %Transport{
-            source: source,
-            dest: dest,
+            dest: id, # me
             direction: :outgoing,
             body: %Room.Message{
               source: source,
@@ -123,8 +122,7 @@ defmodule CizenChat.Automata.Avatar do
           IO.puts("Avatar[#{state.name}] <= Room.Setting: name=#{name}, color=#{color}")
           perform id, %Dispatch{
             body: %Transport{
-              source: source,
-              dest: id,
+              dest: id, # me
               direction: :outgoing,
               body: %Room.Setting{
                 source: source,

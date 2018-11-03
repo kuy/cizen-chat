@@ -36,7 +36,7 @@ defmodule CizenChatWeb.Gateway do
     IO.puts("Gateway[#{state.avatar_id}]")
     event = perform id, %Receive{}
     case event.body do
-      %Transport{source: _source, dest: _dest, direction: _direction, body: body} ->
+      %Transport{dest: _dest, direction: _direction, body: body} ->
         case body do
           %Room.Message{source: source, dest: _dest, room_id: room_id, text: text} ->
             IO.puts("Gateway[#{state.avatar_id}] <= Transport(Room.Message): room=#{room_id}")
@@ -105,7 +105,6 @@ defmodule CizenChatWeb.LoungeChannel do
     handle fn id ->
       perform id, %Dispatch{
         body: %Transport{
-          source: id, # Gateway's saga id
           dest: source,
           direction: :incoming,
           body: %Room.Message{
@@ -125,7 +124,6 @@ defmodule CizenChatWeb.LoungeChannel do
     handle fn id ->
       perform id, %Dispatch{
         body: %Transport{
-          source: id, # Gateway's saga id
           dest: source,
           direction: :incoming,
           body: %Room.Setting{

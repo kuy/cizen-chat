@@ -45,7 +45,7 @@ end
 # Transport: A wrapper event for inter-subsystem communication. Cizen Automata <=> Phoenix Channel.
 
 defmodule CizenChat.Events.Transport do
-  defstruct [:source, :dest, :direction, :body]
+  defstruct [:dest, :direction, :body]
 end
 
 # Lounge
