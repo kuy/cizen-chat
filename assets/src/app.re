@@ -10,6 +10,7 @@ let subtract = (a1, a2) => {
 
 type ready_state = {
   id: string,
+  name: string,
   socket: Socket.t,
   channel: Channel.t,
   rooms: Room.by_room_id,
@@ -27,7 +28,7 @@ type state =
 
 type action =
   | Connect
-  | Connected(string, Socket.t, Channel.t)
+  | Connected(string, string, Socket.t, Channel.t)
   | RoomCreate
   | RoomCreated(string, string, string)
   | RoomEnter(string)
@@ -67,12 +68,13 @@ let make = _children => {
           |> joinChannel
           |> putReceive("ok", (res: Abstract.any) => {
             let welcome: Decode.welcome = Decode.welcome(res);
-            self.send(Connected(welcome.id, socket, channel));
+            self.send(Connected(welcome.id, welcome.name, socket, channel));
           });
       })
-    | Connected(id, socket, channel) =>
+    | Connected(id, name, socket, channel) =>
       ReasonReact.Update(Ready({
         id,
+        name,
         socket,
         channel,
         rooms: Room.RoomMap.empty,
@@ -191,12 +193,12 @@ let make = _children => {
   render: self => {
     <div className="p-container">
       (switch (self.state) {
-      | Ready({ id, rooms, available, entered, messages, text, selected }) =>
+      | Ready({ name, rooms, available, entered, messages, text, selected }) =>
         <>
           <div className=(Room.roomClassName(selected, rooms))>
             <header className="c-header">{ReasonReact.string("CizenChat")}</header>
             <div className="p-side-content">
-              <div className="c-user">(ReasonReact.string("#" ++ id))</div>
+              <div className="c-user">(ReasonReact.string("#" ++ name))</div>
 
               <button className="c-button" onClick=(_event => RoomCreate |> self.send)>
                 (ReasonReact.string("Create Room"))

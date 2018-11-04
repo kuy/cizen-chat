@@ -55,14 +55,13 @@ defmodule CizenChatWeb.LoungeChannel do
   use Cizen.Effectful
 
   def join("lounge:hello", _message, socket) do
-    avatar_id = handle fn id ->
-      welcome_event = perform id, %Request{body: %Lounge.Join{}}
-      welcome_event.body.avatar_id
+    %{body: %{avatar_id: id, avatar_name: name}} = handle fn id ->
+      perform id, %Request{body: %Lounge.Join{}}
     end
 
-    send(self(), {:after_join, avatar_id})
+    send(self(), {:after_join, id})
 
-    {:ok, %{id: avatar_id}, socket}
+    {:ok, %{id: id, name: name}, socket}
   end
 
   def join("lounge:" <> _private_room_id, _params, _socket) do

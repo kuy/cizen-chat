@@ -1,6 +1,6 @@
-alias Cizen.Effects.{Start, Receive, Subscribe, Dispatch}
+alias Cizen.Effects.{Start, Request, Receive, Subscribe, Dispatch}
 alias Cizen.{Event, Filter}
-alias CizenChat.Events.{Lounge, Room}
+alias CizenChat.Events.{Avatar, Lounge, Room}
 alias CizenChat.Automata
 
 defmodule CizenChat.Automata.Lounge do
@@ -36,11 +36,16 @@ defmodule CizenChat.Automata.Lounge do
       %Lounge.Join{} ->
         avatar_id = perform id, %Start{saga: %Automata.Avatar{}}
 
+        %{body: %{name: avatar_name}} = perform id, %Request{
+          body: %Avatar.SelfIntro{avatar_id: avatar_id}
+        }
+
         IO.puts("Lounge <= Lounge.Join: avatar_id=#{avatar_id}")
         perform id, %Dispatch{
           body: %Lounge.Join.Welcome{
             join_id: event.id,
-            avatar_id: avatar_id
+            avatar_id: avatar_id,
+            avatar_name: avatar_name
           }
         }
 

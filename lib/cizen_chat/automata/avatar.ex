@@ -1,7 +1,7 @@
 alias Cizen.Effects.{Receive, Request, Subscribe, Start, Dispatch}
 alias Cizen.{Event, Filter}
 alias CizenChat.Automata
-alias CizenChat.Events.{Transport, Room}
+alias CizenChat.Events.{Transport, Avatar, Room}
 
 defmodule CizenChat.Automata.Avatar do
   use Cizen.Automaton
@@ -10,6 +10,14 @@ defmodule CizenChat.Automata.Avatar do
 
   @impl true
   def spawn(id, _) do
+    perform id, %Subscribe{
+      event_filter: Filter.new(
+        fn %Event{body: %Avatar.SelfIntro{avatar_id: avatar_id}} ->
+          avatar_id == id
+        end
+      )
+    }
+
     perform id, %Subscribe{
       event_filter: Filter.new(
         fn %Event{body: %Room.Create{source: source_id}} ->
@@ -62,6 +70,15 @@ defmodule CizenChat.Automata.Avatar do
   def yield(id, state) do
     event = perform id, %Receive{}
     case event.body do
+      %Avatar.SelfIntro{avatar_id: _avatar_id} ->
+        IO.puts("Avatar[#{state.name}] <= Avatar.SelfIntro")
+        perform id, %Dispatch{
+          body: %Avatar.SelfIntro.Explain{
+            self_intro_id: event.id,
+            name: state.name
+          }
+        }
+        state
       %Room.Create{source: _source} ->
         IO.puts("Avatar[#{state.name}] <= Room.Create")
         room_id = perform id, %Start{saga: %Automata.Room{created_by: id}}

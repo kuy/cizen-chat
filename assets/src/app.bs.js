@@ -46,9 +46,9 @@ function make(_children) {
                 tmp = React.createElement("div", undefined, "Connecting...");
               } else {
                 var match$1 = match[0];
-                var selected = match$1[/* selected */8];
-                var entered = match$1[/* entered */5];
-                var rooms = match$1[/* rooms */3];
+                var selected = match$1[/* selected */9];
+                var entered = match$1[/* entered */6];
+                var rooms = match$1[/* rooms */4];
                 var tmp$1;
                 if (selected !== undefined) {
                   var room = selected;
@@ -64,7 +64,7 @@ function make(_children) {
                                                     undefined,
                                                     color
                                                   ]));
-                                    }), /* array */[]))), ReasonReact.element(undefined, undefined, MessageList$CizenChat.make(Message$CizenChat.getMsg(room, match$1[/* messages */6]), /* array */[])));
+                                    }), /* array */[]))), ReasonReact.element(undefined, undefined, MessageList$CizenChat.make(Message$CizenChat.getMsg(room, match$1[/* messages */7]), /* array */[])));
                 } else {
                   tmp$1 = React.createElement("p", undefined, "Select or create a room");
                 }
@@ -76,12 +76,12 @@ function make(_children) {
                               className: "p-side-content"
                             }, React.createElement("div", {
                                   className: "c-user"
-                                }, "#" + match$1[/* id */0]), React.createElement("button", {
+                                }, "#" + match$1[/* name */1]), React.createElement("button", {
                                   className: "c-button",
                                   onClick: (function (_event) {
                                       return Curry._1(self[/* send */3], /* RoomCreate */1);
                                     })
-                                }, "Create Room"), ReasonReact.element(undefined, undefined, RoomList$CizenChat.make("Available Rooms", Room$CizenChat.byIds(subtract(match$1[/* available */4], entered), rooms), (function (room) {
+                                }, "Create Room"), ReasonReact.element(undefined, undefined, RoomList$CizenChat.make("Available Rooms", Room$CizenChat.byIds(subtract(match$1[/* available */5], entered), rooms), (function (room) {
                                         return Curry._1(self[/* send */3], /* RoomEnter */Block.__(2, [room]));
                                       }), /* array */[])), ReasonReact.element(undefined, undefined, RoomList$CizenChat.make("Joined Rooms", Room$CizenChat.byIds(entered, rooms), (function (room) {
                                         return Curry._1(self[/* send */3], /* RoomSelect */Block.__(3, [room]));
@@ -96,7 +96,7 @@ function make(_children) {
                                 }, React.createElement("textarea", {
                                       placeholder: "What's up?",
                                       rows: 1,
-                                      value: match$1[/* text */7],
+                                      value: match$1[/* text */8],
                                       onKeyDown: (function ($$event) {
                                           if ($$event.keyCode === 13) {
                                             $$event.preventDefault();
@@ -149,6 +149,7 @@ function make(_children) {
                                             var welcome = Decode$CizenChat.welcome(res);
                                             return Curry._1(self[/* send */3], /* Connected */Block.__(0, [
                                                           welcome[/* id */0],
+                                                          welcome[/* name */1],
                                                           socket,
                                                           channel
                                                         ]));
@@ -171,7 +172,7 @@ function make(_children) {
                                                           ]));
                                             }), Phx.push("room:create", {
                                                 source: match$1[/* id */0]
-                                              }, undefined, match$1[/* channel */2]));
+                                              }, undefined, match$1[/* channel */3]));
                                       return /* () */0;
                                     }
                                   })]);
@@ -182,16 +183,16 @@ function make(_children) {
                                       return /* () */0;
                                     } else {
                                       var match$1 = match[0];
-                                      var selected = match$1[/* selected */8];
+                                      var selected = match$1[/* selected */9];
                                       if (selected !== undefined) {
                                         var room = selected;
-                                        var text = match$1[/* text */7];
+                                        var text = match$1[/* text */8];
                                         var id = match$1[/* id */0];
                                         Phx.push("room:message", {
                                               source: id,
                                               room_id: room,
                                               body: text
-                                            }, undefined, match$1[/* channel */2]);
+                                            }, undefined, match$1[/* channel */3]);
                                         Curry._1(self[/* send */3], /* Receive */Block.__(6, [
                                                 id,
                                                 room,
@@ -210,8 +211,9 @@ function make(_children) {
                   case 0 : 
                       return /* Update */Block.__(0, [/* Ready */[/* record */[
                                     /* id */action[0],
-                                    /* socket */action[1],
-                                    /* channel */action[2],
+                                    /* name */action[1],
+                                    /* socket */action[2],
+                                    /* channel */action[3],
                                     /* rooms */Room$CizenChat.RoomMap[/* empty */0],
                                     /* available : array */[],
                                     /* entered : array */[],
@@ -227,13 +229,14 @@ function make(_children) {
                         var state$1 = state[0];
                         return /* Update */Block.__(0, [/* Ready */[/* record */[
                                       /* id */state$1[/* id */0],
-                                      /* socket */state$1[/* socket */1],
-                                      /* channel */state$1[/* channel */2],
-                                      /* rooms */Room$CizenChat.upsertRoom(room_id, action[1], action[2], state$1[/* rooms */3]),
-                                      /* available */Room$CizenChat.uniqRooms(room_id, state$1[/* available */4]),
-                                      /* entered */Room$CizenChat.uniqRooms(room_id, state$1[/* entered */5]),
-                                      /* messages */state$1[/* messages */6],
-                                      /* text */state$1[/* text */7],
+                                      /* name */state$1[/* name */1],
+                                      /* socket */state$1[/* socket */2],
+                                      /* channel */state$1[/* channel */3],
+                                      /* rooms */Room$CizenChat.upsertRoom(room_id, action[1], action[2], state$1[/* rooms */4]),
+                                      /* available */Room$CizenChat.uniqRooms(room_id, state$1[/* available */5]),
+                                      /* entered */Room$CizenChat.uniqRooms(room_id, state$1[/* entered */6]),
+                                      /* messages */state$1[/* messages */7],
+                                      /* text */state$1[/* text */8],
                                       /* selected */room_id
                                     ]]]);
                       }
@@ -246,16 +249,17 @@ function make(_children) {
                         Phx.push("room:enter", {
                               source: state$2[/* id */0],
                               room_id: room_id$1
-                            }, undefined, state$2[/* channel */2]);
+                            }, undefined, state$2[/* channel */3]);
                         return /* Update */Block.__(0, [/* Ready */[/* record */[
                                       /* id */state$2[/* id */0],
-                                      /* socket */state$2[/* socket */1],
-                                      /* channel */state$2[/* channel */2],
-                                      /* rooms */state$2[/* rooms */3],
-                                      /* available */state$2[/* available */4],
-                                      /* entered */Room$CizenChat.uniqRooms(room_id$1, state$2[/* entered */5]),
-                                      /* messages */state$2[/* messages */6],
-                                      /* text */state$2[/* text */7],
+                                      /* name */state$2[/* name */1],
+                                      /* socket */state$2[/* socket */2],
+                                      /* channel */state$2[/* channel */3],
+                                      /* rooms */state$2[/* rooms */4],
+                                      /* available */state$2[/* available */5],
+                                      /* entered */Room$CizenChat.uniqRooms(room_id$1, state$2[/* entered */6]),
+                                      /* messages */state$2[/* messages */7],
+                                      /* text */state$2[/* text */8],
                                       /* selected */room_id$1
                                     ]]]);
                       }
@@ -266,13 +270,14 @@ function make(_children) {
                         var state$3 = state[0];
                         return /* Update */Block.__(0, [/* Ready */[/* record */[
                                       /* id */state$3[/* id */0],
-                                      /* socket */state$3[/* socket */1],
-                                      /* channel */state$3[/* channel */2],
-                                      /* rooms */state$3[/* rooms */3],
-                                      /* available */state$3[/* available */4],
-                                      /* entered */state$3[/* entered */5],
-                                      /* messages */state$3[/* messages */6],
-                                      /* text */state$3[/* text */7],
+                                      /* name */state$3[/* name */1],
+                                      /* socket */state$3[/* socket */2],
+                                      /* channel */state$3[/* channel */3],
+                                      /* rooms */state$3[/* rooms */4],
+                                      /* available */state$3[/* available */5],
+                                      /* entered */state$3[/* entered */6],
+                                      /* messages */state$3[/* messages */7],
+                                      /* text */state$3[/* text */8],
                                       /* selected */action[0]
                                     ]]]);
                       }
@@ -284,14 +289,15 @@ function make(_children) {
                         var state$4 = state[0];
                         return /* Update */Block.__(0, [/* Ready */[/* record */[
                                       /* id */state$4[/* id */0],
-                                      /* socket */state$4[/* socket */1],
-                                      /* channel */state$4[/* channel */2],
-                                      /* rooms */Room$CizenChat.upsertRoom(room_id$2, action[1], action[2], state$4[/* rooms */3]),
-                                      /* available */Room$CizenChat.uniqRooms(room_id$2, state$4[/* available */4]),
-                                      /* entered */state$4[/* entered */5],
-                                      /* messages */state$4[/* messages */6],
-                                      /* text */state$4[/* text */7],
-                                      /* selected */state$4[/* selected */8]
+                                      /* name */state$4[/* name */1],
+                                      /* socket */state$4[/* socket */2],
+                                      /* channel */state$4[/* channel */3],
+                                      /* rooms */Room$CizenChat.upsertRoom(room_id$2, action[1], action[2], state$4[/* rooms */4]),
+                                      /* available */Room$CizenChat.uniqRooms(room_id$2, state$4[/* available */5]),
+                                      /* entered */state$4[/* entered */6],
+                                      /* messages */state$4[/* messages */7],
+                                      /* text */state$4[/* text */8],
+                                      /* selected */state$4[/* selected */9]
                                     ]]]);
                       }
                   case 5 : 
@@ -303,10 +309,10 @@ function make(_children) {
                                       return /* () */0;
                                     } else {
                                       var match$1 = match[0];
-                                      var selected = match$1[/* selected */8];
+                                      var selected = match$1[/* selected */9];
                                       if (selected !== undefined) {
                                         var room = selected;
-                                        var rooms = match$1[/* rooms */3];
+                                        var rooms = match$1[/* rooms */4];
                                         var name = name_opt !== undefined ? name_opt : Room$CizenChat.getRoomName(room, rooms);
                                         var color = color_opt !== undefined ? color_opt : Room$CizenChat.getRoomColor(room, rooms);
                                         Phx.push("room:setting", {
@@ -314,7 +320,7 @@ function make(_children) {
                                               room_id: room,
                                               name: name,
                                               color: color
-                                            }, undefined, match$1[/* channel */2]);
+                                            }, undefined, match$1[/* channel */3]);
                                         return Curry._1(self[/* send */3], /* ReceiveRoomSetting */Block.__(4, [
                                                       room,
                                                       name,
@@ -332,14 +338,15 @@ function make(_children) {
                         var state$5 = state[0];
                         return /* Update */Block.__(0, [/* Ready */[/* record */[
                                       /* id */state$5[/* id */0],
-                                      /* socket */state$5[/* socket */1],
-                                      /* channel */state$5[/* channel */2],
-                                      /* rooms */state$5[/* rooms */3],
-                                      /* available */state$5[/* available */4],
-                                      /* entered */state$5[/* entered */5],
-                                      /* messages */Message$CizenChat.addMsg(action[0], action[1], action[2], state$5[/* messages */6]),
-                                      /* text */state$5[/* text */7],
-                                      /* selected */state$5[/* selected */8]
+                                      /* name */state$5[/* name */1],
+                                      /* socket */state$5[/* socket */2],
+                                      /* channel */state$5[/* channel */3],
+                                      /* rooms */state$5[/* rooms */4],
+                                      /* available */state$5[/* available */5],
+                                      /* entered */state$5[/* entered */6],
+                                      /* messages */Message$CizenChat.addMsg(action[0], action[1], action[2], state$5[/* messages */7]),
+                                      /* text */state$5[/* text */8],
+                                      /* selected */state$5[/* selected */9]
                                     ]]]);
                       }
                   case 7 : 
@@ -349,14 +356,15 @@ function make(_children) {
                         var state$6 = state[0];
                         return /* Update */Block.__(0, [/* Ready */[/* record */[
                                       /* id */state$6[/* id */0],
-                                      /* socket */state$6[/* socket */1],
-                                      /* channel */state$6[/* channel */2],
-                                      /* rooms */state$6[/* rooms */3],
-                                      /* available */state$6[/* available */4],
-                                      /* entered */state$6[/* entered */5],
-                                      /* messages */state$6[/* messages */6],
+                                      /* name */state$6[/* name */1],
+                                      /* socket */state$6[/* socket */2],
+                                      /* channel */state$6[/* channel */3],
+                                      /* rooms */state$6[/* rooms */4],
+                                      /* available */state$6[/* available */5],
+                                      /* entered */state$6[/* entered */6],
+                                      /* messages */state$6[/* messages */7],
                                       /* text */action[0],
-                                      /* selected */state$6[/* selected */8]
+                                      /* selected */state$6[/* selected */9]
                                     ]]]);
                       }
                   

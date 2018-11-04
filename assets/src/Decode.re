@@ -1,10 +1,11 @@
-type welcome = { id: string };
+type welcome = { id: string, name: string };
 type message = { source: string, room_id: string, body: string };
 type setting = { room_id: string, name: string, color: string };
 
 let welcome = json =>
   Json.Decode.{
-    id: json |> field("id", string)
+    id: json |> field("id", string),
+    name: json |> field("name", string)
   };
 
 let receive = json =>

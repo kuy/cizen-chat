@@ -4,7 +4,10 @@
 var Json_decode = require("@glennsl/bs-json/src/Json_decode.bs.js");
 
 function welcome(json) {
-  return /* record */[/* id */Json_decode.field("id", Json_decode.string, json)];
+  return /* record */[
+          /* id */Json_decode.field("id", Json_decode.string, json),
+          /* name */Json_decode.field("name", Json_decode.string, json)
+        ];
 }
 
 function receive(json) {

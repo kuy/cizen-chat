@@ -42,7 +42,18 @@ defmodule CizenChat.Events.Room.Message do
   defstruct [:source, :dest, :room_id, :text]
 end
 
-# Transport: A wrapper event for inter-subsystem communication. Cizen Automata <=> Phoenix Channel.
+# Avatar
+
+defmodule CizenChat.Events.Avatar.SelfIntro do
+  defstruct [:avatar_id]
+
+  use Cizen.Request
+  defresponse Explain, :self_intro_id do
+    defstruct [:self_intro_id, :name]
+  end
+end
+
+# Transport: A wrapper event for inter-subsystem communication. Cizen Automata <=> Phoenix Channels.
 
 defmodule CizenChat.Events.Transport do
   defstruct [:dest, :direction, :body]
@@ -55,6 +66,6 @@ defmodule CizenChat.Events.Lounge.Join do
 
   use Cizen.Request
   defresponse Welcome, :join_id do
-    defstruct [:join_id, :avatar_id, :rooms]
+    defstruct [:join_id, :avatar_id, :avatar_name]
   end
 end
