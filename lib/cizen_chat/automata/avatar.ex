@@ -37,8 +37,15 @@ defmodule CizenChat.Automata.Avatar do
     # Transport from Phoenix Channel
     perform id, %Subscribe{
       event_filter: Filter.new(
+        fn %Event{body: %Transport{dest: dest, direction: dir, body: %Avatar.Profile{source: source}}} ->
+          dest == id and dir == :incoming and source == id
+        end
+      )
+    }
+    perform id, %Subscribe{
+      event_filter: Filter.new(
         fn %Event{body: %Transport{dest: dest, direction: dir, body: %Room.Message{source: source}}} ->
-          source == id and dest == id and dir == :incoming
+          dest == id and dir == :incoming and source == id
         end
       )
     }
@@ -111,6 +118,9 @@ defmodule CizenChat.Automata.Avatar do
       # Phoenix Channel -> Gateway -> Avatar(me) -> Room
       %Transport{dest: _dest, direction: _direction, body: body} ->
         case body do
+          %Avatar.Profile{source: _source, name: name} ->
+            IO.puts("Avatar[#{state.name}] <= Transport(Avatar.Profile): Rename '#{state.name}' -> '#{name}'")
+            put_in(state, [:name], name)
           %Room.Message{source: _source, dest: _dest, room_id: room_id, text: text} ->
             IO.puts("Avatar[#{state.name}] <= Transport(Room.Message): '#{text}' by me at #{room_id}")
             perform id, %Dispatch{body: body}

@@ -35,6 +35,8 @@ type action =
   | RoomSelect(string)
   | ReceiveRoomSetting(string, string, string)
   | SendRoomSetting(option(string), option(string))
+  | ReceiveAvatarProfile(string, string)
+  | SendAvatarProfile(string)
   | Send
   | Receive(string, string, string)
   | UpdateText(string);
@@ -64,6 +66,10 @@ let make = _children => {
           |> putOn("room:setting", (res: Abstract.any) => {
             let { room_id, name, color }: Decode.setting = Decode.setting(res);
             self.send(ReceiveRoomSetting(room_id, name, color));
+          })
+          |> putOn("avatar:profile", (res: Abstract.any) => {
+            let { avatar_id, name }: Decode.profile = Decode.profile(res);
+            self.send(ReceiveAvatarProfile(avatar_id, name));
           })
           |> joinChannel
           |> putReceive("ok", (res: Abstract.any) => {
@@ -180,6 +186,19 @@ let make = _children => {
         }
       | _ => ()
       }})
+    | ReceiveAvatarProfile(avatar_id, name) =>
+      switch (state) {
+      | Ready(state) => ReasonReact.Update(Ready({...state, name}))
+      | _ => ReasonReact.NoUpdate
+      }
+    | SendAvatarProfile(name) => ReasonReact.SideEffects(self => {
+      switch (self.state) {
+      | Ready({ id, channel }) =>
+        push("avatar:profile", {"source": id, "name": name}, channel) |> ignore;
+        /* Loopback. Update self state */
+        self.send(ReceiveAvatarProfile(id, name));
+      | _ => ()
+      }})
     | UpdateText(input) =>
       switch (state) {
       | Ready({ text } as state) =>
@@ -198,7 +217,11 @@ let make = _children => {
           <div className=(Room.roomClassName(selected, rooms))>
             <header className="c-header">{ReasonReact.string("CizenChat")}</header>
             <div className="p-side-content">
-              <div className="c-user">(ReasonReact.string("#" ++ name))</div>
+              <InPlaceEdit
+                name="user"
+                text=name
+                handleChange=(value => SendAvatarProfile(value) |> self.send)
+              />
 
               <button className="c-button" onClick=(_event => RoomCreate |> self.send)>
                 (ReasonReact.string("Create Room"))
@@ -223,9 +246,10 @@ let make = _children => {
               | Some(room) =>
                 <>
                   <div className="c-chat-header">
-                    <RoomTitle
-                      name=(Room.getRoomName(room, rooms))
-                      handleChange=(name => SendRoomSetting(Some(name), None) |> self.send)
+                    <InPlaceEdit
+                      name="room-title"
+                      text=(Room.getRoomName(room, rooms))
+                      handleChange=(value => SendRoomSetting(Some(value), None) |> self.send)
                     />
                     <ThemeChanger
                       handleChange=(color => SendRoomSetting(None, Some(color)) |> self.send)

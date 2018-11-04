@@ -82,9 +82,24 @@ body {
   justify-content: space-around;
 }
 
-.c-user {
+.c-iedit-user {
   font-size: 12px;
   padding-bottom: 8px;
+}
+
+.c-iedit-user-content {
+}
+
+.c-iedit-user-action {
+  color: rgb(238, 238, 238);
+  font-size: 12px;
+  font-style: italic;
+  cursor: pointer;
+  padding: 0 6px;
+}
+
+.c-iedit-user-action:hover {
+  color: rgb(214, 214, 214);
 }
 
 .c-button {
@@ -141,15 +156,15 @@ body {
   justify-content: space-between;
 }
 
-.c-room-title {
+.c-iedit-room-title {
 }
 
-.c-room-title-text {
+.c-iedit-room-title-content {
   color: rgb(67, 148, 67);
   font-size: 18px;
 }
 
-.c-room-title-action {
+.c-iedit-room-title-action {
   color: rgb(214, 214, 214);
   font-size: 12px;
   font-style: italic;
@@ -157,7 +172,7 @@ body {
   padding: 0 6px;
 }
 
-.c-room-title-action:hover {
+.c-iedit-room-title-action:hover {
   color: rgb(192, 192, 192);
 }
 

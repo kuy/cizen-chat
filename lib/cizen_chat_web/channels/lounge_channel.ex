@@ -1,6 +1,6 @@
 alias Cizen.Effects.{Subscribe, Dispatch, Request, Receive, Start}
 alias Cizen.{Event, Filter}
-alias CizenChat.Events.{Transport, Lounge, Room}
+alias CizenChat.Events.{Transport, Lounge, Room, Avatar}
 
 defmodule CizenChatWeb.Gateway do
   alias Phoenix.Channel
@@ -130,6 +130,23 @@ defmodule CizenChatWeb.LoungeChannel do
             room_id: room_id,
             name: name,
             color: color
+          }
+        }
+      }
+    end
+    {:noreply, socket}
+  end
+
+  def handle_in("avatar:profile", %{"source" => source, "name" => name}, socket) do
+    IO.puts("Channel#avatar:profile: name=#{name}, by=#{source}")
+    handle fn id ->
+      perform id, %Dispatch{
+        body: %Transport{
+          dest: source,
+          direction: :incoming,
+          body: %Avatar.Profile{
+            source: source,
+            name: name
           }
         }
       }

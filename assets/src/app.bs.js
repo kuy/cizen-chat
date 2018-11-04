@@ -12,8 +12,8 @@ var Room$CizenChat = require("./Room.bs.js");
 var Decode$CizenChat = require("./Decode.bs.js");
 var Message$CizenChat = require("./Message.bs.js");
 var RoomList$CizenChat = require("./RoomList.bs.js");
-var RoomTitle$CizenChat = require("./RoomTitle.bs.js");
 var MessageMap$CizenChat = require("./MessageMap.bs.js");
+var InPlaceEdit$CizenChat = require("./InPlaceEdit.bs.js");
 var MessageList$CizenChat = require("./MessageList.bs.js");
 var ThemeChanger$CizenChat = require("./ThemeChanger.bs.js");
 
@@ -54,9 +54,9 @@ function make(_children) {
                   var room = selected;
                   tmp$1 = React.createElement(React.Fragment, undefined, React.createElement("div", {
                             className: "c-chat-header"
-                          }, ReasonReact.element(undefined, undefined, RoomTitle$CizenChat.make(Room$CizenChat.getRoomName(room, rooms), (function (name) {
+                          }, ReasonReact.element(undefined, undefined, InPlaceEdit$CizenChat.make("room-title", Room$CizenChat.getRoomName(room, rooms), (function (value) {
                                       return Curry._1(self[/* send */3], /* SendRoomSetting */Block.__(5, [
-                                                    name,
+                                                    value,
                                                     undefined
                                                   ]));
                                     }), /* array */[])), ReasonReact.element(undefined, undefined, ThemeChanger$CizenChat.make((function (color) {
@@ -74,9 +74,9 @@ function make(_children) {
                               className: "c-header"
                             }, "CizenChat"), React.createElement("div", {
                               className: "p-side-content"
-                            }, React.createElement("div", {
-                                  className: "c-user"
-                                }, "#" + match$1[/* name */1]), React.createElement("button", {
+                            }, ReasonReact.element(undefined, undefined, InPlaceEdit$CizenChat.make("user", match$1[/* name */1], (function (value) {
+                                        return Curry._1(self[/* send */3], /* SendAvatarProfile */Block.__(7, [value]));
+                                      }), /* array */[])), React.createElement("button", {
                                   className: "c-button",
                                   onClick: (function (_event) {
                                       return Curry._1(self[/* send */3], /* RoomCreate */1);
@@ -106,7 +106,7 @@ function make(_children) {
                                           }
                                         }),
                                       onChange: (function ($$event) {
-                                          return Curry._1(self[/* send */3], /* UpdateText */Block.__(7, [$$event.target.value]));
+                                          return Curry._1(self[/* send */3], /* UpdateText */Block.__(9, [$$event.target.value]));
                                         })
                                     })))), React.createElement("div", {
                           className: "p-avatars"
@@ -130,21 +130,27 @@ function make(_children) {
                                     var channel = (function (eta) {
                                           return Phx.initChannel("lounge:hello", undefined, eta);
                                         })(socket);
-                                    var eta$1 = Phx.putOn("room:setting", (function (res) {
-                                            var match = Decode$CizenChat.setting(res);
-                                            return Curry._1(self[/* send */3], /* ReceiveRoomSetting */Block.__(4, [
-                                                          match[/* room_id */0],
-                                                          match[/* name */1],
-                                                          match[/* color */2]
+                                    var eta$1 = Phx.putOn("avatar:profile", (function (res) {
+                                            var match = Decode$CizenChat.profile(res);
+                                            return Curry._1(self[/* send */3], /* ReceiveAvatarProfile */Block.__(6, [
+                                                          match[/* avatar_id */0],
+                                                          match[/* name */1]
                                                         ]));
-                                          }), Phx.putOn("room:message", (function (res) {
-                                                var match = Decode$CizenChat.receive(res);
-                                                return Curry._1(self[/* send */3], /* Receive */Block.__(6, [
-                                                              match[/* source */0],
-                                                              match[/* room_id */1],
-                                                              match[/* body */2]
+                                          }), Phx.putOn("room:setting", (function (res) {
+                                                var match = Decode$CizenChat.setting(res);
+                                                return Curry._1(self[/* send */3], /* ReceiveRoomSetting */Block.__(4, [
+                                                              match[/* room_id */0],
+                                                              match[/* name */1],
+                                                              match[/* color */2]
                                                             ]));
-                                              }), channel));
+                                              }), Phx.putOn("room:message", (function (res) {
+                                                    var match = Decode$CizenChat.receive(res);
+                                                    return Curry._1(self[/* send */3], /* Receive */Block.__(8, [
+                                                                  match[/* source */0],
+                                                                  match[/* room_id */1],
+                                                                  match[/* body */2]
+                                                                ]));
+                                                  }), channel)));
                                     Phx.putReceive("ok", (function (res) {
                                             var welcome = Decode$CizenChat.welcome(res);
                                             return Curry._1(self[/* send */3], /* Connected */Block.__(0, [
@@ -193,12 +199,12 @@ function make(_children) {
                                               room_id: room,
                                               body: text
                                             }, undefined, match$1[/* channel */3]);
-                                        Curry._1(self[/* send */3], /* Receive */Block.__(6, [
+                                        Curry._1(self[/* send */3], /* Receive */Block.__(8, [
                                                 id,
                                                 room,
                                                 text
                                               ]));
-                                        return Curry._1(self[/* send */3], /* UpdateText */Block.__(7, [""]));
+                                        return Curry._1(self[/* send */3], /* UpdateText */Block.__(9, [""]));
                                       } else {
                                         return /* () */0;
                                       }
@@ -338,18 +344,37 @@ function make(_children) {
                         var state$5 = state[0];
                         return /* Update */Block.__(0, [/* Ready */[/* record */[
                                       /* id */state$5[/* id */0],
-                                      /* name */state$5[/* name */1],
+                                      /* name */action[1],
                                       /* socket */state$5[/* socket */2],
                                       /* channel */state$5[/* channel */3],
                                       /* rooms */state$5[/* rooms */4],
                                       /* available */state$5[/* available */5],
                                       /* entered */state$5[/* entered */6],
-                                      /* messages */Message$CizenChat.addMsg(action[0], action[1], action[2], state$5[/* messages */7]),
+                                      /* messages */state$5[/* messages */7],
                                       /* text */state$5[/* text */8],
                                       /* selected */state$5[/* selected */9]
                                     ]]]);
                       }
                   case 7 : 
+                      var name = action[0];
+                      return /* SideEffects */Block.__(1, [(function (self) {
+                                    var match = self[/* state */1];
+                                    if (typeof match === "number") {
+                                      return /* () */0;
+                                    } else {
+                                      var match$1 = match[0];
+                                      var id = match$1[/* id */0];
+                                      Phx.push("avatar:profile", {
+                                            source: id,
+                                            name: name
+                                          }, undefined, match$1[/* channel */3]);
+                                      return Curry._1(self[/* send */3], /* ReceiveAvatarProfile */Block.__(6, [
+                                                    id,
+                                                    name
+                                                  ]));
+                                    }
+                                  })]);
+                  case 8 : 
                       if (typeof state === "number") {
                         return /* NoUpdate */0;
                       } else {
@@ -362,9 +387,27 @@ function make(_children) {
                                       /* rooms */state$6[/* rooms */4],
                                       /* available */state$6[/* available */5],
                                       /* entered */state$6[/* entered */6],
-                                      /* messages */state$6[/* messages */7],
-                                      /* text */action[0],
+                                      /* messages */Message$CizenChat.addMsg(action[0], action[1], action[2], state$6[/* messages */7]),
+                                      /* text */state$6[/* text */8],
                                       /* selected */state$6[/* selected */9]
+                                    ]]]);
+                      }
+                  case 9 : 
+                      if (typeof state === "number") {
+                        return /* NoUpdate */0;
+                      } else {
+                        var state$7 = state[0];
+                        return /* Update */Block.__(0, [/* Ready */[/* record */[
+                                      /* id */state$7[/* id */0],
+                                      /* name */state$7[/* name */1],
+                                      /* socket */state$7[/* socket */2],
+                                      /* channel */state$7[/* channel */3],
+                                      /* rooms */state$7[/* rooms */4],
+                                      /* available */state$7[/* available */5],
+                                      /* entered */state$7[/* entered */6],
+                                      /* messages */state$7[/* messages */7],
+                                      /* text */action[0],
+                                      /* selected */state$7[/* selected */9]
                                     ]]]);
                       }
                   

@@ -6,9 +6,9 @@ var Curry = require("bs-platform/lib/js/curry.js");
 var React = require("react");
 var ReasonReact = require("reason-react/src/ReasonReact.js");
 
-var component = ReasonReact.reducerComponent("RoomTitle");
+var component = ReasonReact.reducerComponent("InPlaceEdit");
 
-function make(name, handleChange, _children) {
+function make(name, text, handleChange, _children) {
   return /* record */[
           /* debugName */component[/* debugName */0],
           /* reactClassInternal */component[/* reactClassInternal */1],
@@ -23,13 +23,13 @@ function make(name, handleChange, _children) {
               var match = self[/* state */1];
               var tmp;
               if (match) {
-                var text = match[0][/* text */0];
+                var str = match[0][/* text */0];
                 tmp = React.createElement("input", {
-                      value: text,
+                      value: str,
                       onKeyDown: (function ($$event) {
                           if ($$event.keyCode === 13) {
                             $$event.preventDefault();
-                            Curry._1(handleChange, text);
+                            Curry._1(handleChange, str);
                             return Curry._1(self[/* send */3], /* Toggle */0);
                           } else {
                             return 0;
@@ -41,16 +41,16 @@ function make(name, handleChange, _children) {
                     });
               } else {
                 tmp = React.createElement(React.Fragment, undefined, React.createElement("span", {
-                          className: "c-room-title-text"
-                        }, "Room #" + name), React.createElement("span", {
-                          className: "c-room-title-action",
+                          className: "c-iedit-" + (name + "-content")
+                        }, text), React.createElement("span", {
+                          className: "c-iedit-" + (name + "-action"),
                           onClick: (function (_event) {
                               return Curry._1(self[/* send */3], /* Toggle */0);
                             })
                         }, "Edit"));
               }
               return React.createElement("div", {
-                          className: "c-room-title"
+                          className: "c-iedit-" + name
                         }, tmp);
             }),
           /* initialState */(function (param) {
@@ -63,7 +63,7 @@ function make(name, handleChange, _children) {
               } else if (state) {
                 return /* Update */Block.__(0, [/* Fixed */0]);
               } else {
-                return /* Update */Block.__(0, [/* Editing */[/* record */[/* text */name]]]);
+                return /* Update */Block.__(0, [/* Editing */[/* record */[/* text */text]]]);
               }
             }),
           /* jsElementWrapped */component[/* jsElementWrapped */13]

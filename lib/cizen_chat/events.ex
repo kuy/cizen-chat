@@ -53,6 +53,10 @@ defmodule CizenChat.Events.Avatar.SelfIntro do
   end
 end
 
+defmodule CizenChat.Events.Avatar.Profile do
+  defstruct [:source, :name]
+end
+
 # Transport: A wrapper event for inter-subsystem communication. Cizen Automata <=> Phoenix Channels.
 
 defmodule CizenChat.Events.Transport do

@@ -26,7 +26,15 @@ function setting(json) {
         ];
 }
 
+function profile(json) {
+  return /* record */[
+          /* avatar_id */Json_decode.field("avatar_id", Json_decode.string, json),
+          /* name */Json_decode.field("name", Json_decode.string, json)
+        ];
+}
+
 exports.welcome = welcome;
 exports.receive = receive;
 exports.setting = setting;
+exports.profile = profile;
 /* No side effect */
