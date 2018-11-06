@@ -15,10 +15,3 @@ yarn
 ```
 mix phx.server
 ```
-
-### Client
-
-```
-cd assets
-yarn start
-```
