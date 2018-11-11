@@ -66,6 +66,11 @@ defmodule CizenChat.Automata.Avatar do
       )
     }
 
+    # Request advertisement to all rooms
+    perform id, %Dispatch{
+      body: %Room.Advertise{joiner_id: id}
+    }
+
     name = id |> String.split("-") |> List.first
     %{
       name: name, # avatar name

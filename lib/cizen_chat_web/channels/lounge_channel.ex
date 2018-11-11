@@ -7,24 +7,17 @@ defmodule CizenChatWeb.LoungeChannel do
   use Cizen.Effectful
 
   def join("lounge:hello", _message, socket) do
-    %{body: %{avatar_id: avatar_id, avatar_name: name}} = handle fn id ->
-      perform id, %Request{body: %Lounge.Join{}}
-    end
-
     Dispatcher.listen(Filter.new(
-      fn %Event{body: %Transport{dest: dest_id, direction: dir}} ->
-        dest_id == avatar_id and dir == :outgoing
+      fn %Event{body: %Transport{direction: dir}} ->
+        dir == :outgoing
       end
     ))
 
-    # FIXME: Request advertising to rooms
-    handle fn id ->
-      perform id, %Dispatch{
-        body: %Room.Advertise{joiner_id: avatar_id}
-      }
+    %{body: %{avatar_id: id, avatar_name: name}} = handle fn id ->
+      perform id, %Request{body: %Lounge.Join{}}
     end
 
-    {:ok, %{id: avatar_id, name: name}, socket}
+    {:ok, %{id: id, name: name}, socket}
   end
 
   def join("lounge:" <> _private_room_id, _params, _socket) do
@@ -45,11 +38,8 @@ defmodule CizenChatWeb.LoungeChannel do
 
   def handle_in("room:create", %{"source" => source}, socket) do
     IO.puts("Channel#room:create: by #{source}")
-    body = handle fn id ->
-      done_event = perform id, %Request{
-        body: %Room.Create{source: source}
-      }
-      done_event.body
+    %{body: body} = handle fn id ->
+      perform id, %Request{body: %Room.Create{source: source}}
     end
     {:reply, {:ok, body}, socket}
   end
