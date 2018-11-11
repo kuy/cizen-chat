@@ -7,15 +7,15 @@ defmodule CizenChatWeb.LoungeChannel do
   use Cizen.Effectful
 
   def join("lounge:hello", _message, socket) do
-    Dispatcher.listen(Filter.new(
-      fn %Event{body: %Transport{direction: dir}} ->
-        dir == :outgoing
-      end
-    ))
-
     %{body: %{avatar_id: id, avatar_name: name}} = handle fn id ->
       perform id, %Request{body: %Lounge.Join{}}
     end
+
+    Dispatcher.listen(Filter.new(
+      fn %Event{body: %Transport{dest: dest, direction: dir}} ->
+        dest == id and dir == :outgoing
+      end
+    ))
 
     {:ok, %{id: id, name: name}, socket}
   end
